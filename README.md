@@ -79,6 +79,7 @@ Bilgisayarında denemek için hiçbirine gerek yok. Yayına alırken sunucunun a
 | `SMTP_PASS` | O hesabın uygulama parolası | E-posta özelliği kapalı |
 | `SMTP_HOST`, `SMTP_PORT` | Gmail dışında bir servis için | `smtp.gmail.com`, 465 |
 | `APP_URL` | Maillerdeki bağlantıların başına gelecek site adresi | Vercel'de kendiliğinden bulunur |
+| `ADMIN_EMAIL` | Yönetim sayfasını görebilecek hesabın e-posta adresi (birden çoksa virgülle) | Yönetici yok |
 | `NODE_ENV` | `production` ise oturum çerezi yalnızca HTTPS'te gönderilir | Geliştirme modu |
 
 E-posta kapalıyken mail gitmez ve e-posta doğrulaması istenmez; ortak panolar yine çalışır.

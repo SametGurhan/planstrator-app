@@ -310,3 +310,37 @@ test("gizlilik politikası sayfası giriş yapmadan açılır", async () => {
   assert.equal(response.status, 200);
   assert.ok((await response.text()).includes("hesap-silme"));
 });
+
+test("yönetici paneli: yalnızca ADMIN_EMAIL hesabı kullanıcıları görebilir ve silebilir", async () => {
+  process.env.ADMIN_EMAIL = "yonetici@example.com";
+  const yonetici = createClient();
+  const siradan = createClient();
+  const adminUser = (await yonetici("POST", "/api/auth/register", { email: "yonetici@example.com", name: "Yönetici", password: "yonetici-parola-1" })).body.user;
+  const normalUser = (await siradan("POST", "/api/auth/register", { email: "siradan@example.com", name: "Sıradan", password: "siradan-parola-1" })).body.user;
+  assert.equal(adminUser.isAdmin, true);
+  assert.equal(normalUser.isAdmin, false);
+
+  // Giriş yapmamış ya da yönetici olmayan biri listeyi alamaz, kimseyi silemez.
+  assert.equal((await yabanci("GET", "/api/admin/users")).status, 401);
+  assert.equal((await siradan("GET", "/api/admin/users")).status, 403);
+  assert.equal((await siradan("DELETE", `/api/admin/users/${adminUser.id}`)).status, 403);
+
+  const list = await yonetici("GET", "/api/admin/users");
+  assert.equal(list.status, 200);
+  const row = list.body.users.find((user) => user.email === "siradan@example.com");
+  assert.equal(row.name, "Sıradan");
+  assert.ok(row.createdAt > 0 && row.lastSeenAt > 0);
+  assert.equal(JSON.stringify(list.body).includes("password"), false); // parola özeti asla dönmez
+
+  // Yönetici kendini buradan silemez; olmayan kullanıcı 404 verir.
+  assert.equal((await yonetici("DELETE", `/api/admin/users/${adminUser.id}`)).status, 400);
+  assert.equal((await yonetici("DELETE", "/api/admin/users/999999")).status, 404);
+
+  assert.equal((await yonetici("DELETE", `/api/admin/users/${normalUser.id}`)).status, 200);
+  assert.equal((await siradan("GET", "/api/auth/me")).body.user, null); // oturumu da kapandı
+  assert.equal((await yonetici("GET", "/api/admin/users")).body.users.some((user) => user.id === normalUser.id), false);
+
+  // Ayar kaldırılınca aynı hesap artık yönetici değildir.
+  delete process.env.ADMIN_EMAIL;
+  assert.equal((await yonetici("GET", "/api/admin/users")).status, 403);
+});

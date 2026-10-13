@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS users (
   name          TEXT NOT NULL,
   password_hash TEXT NOT NULL,                 -- parolanın kendisi ASLA saklanmaz
   email_verified INTEGER NOT NULL DEFAULT 0,   -- 0: doğrulanmadı, 1: doğrulandı (SQLite'ta ayrı bir evet/hayır tipi yoktur)
-  created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  last_seen_at  INTEGER                        -- uygulamayı en son açtığı an (ms); hiç yoksa NULL
 );
 
 -- E-posta doğrulama bağlantıları. Mailde rastgele bir anahtar gider; burada özeti saklanır.

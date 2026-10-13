@@ -17,9 +17,10 @@ import { initPomodoro, renderPomodoro, setPageTitle } from "./modules/pomodoro.j
 import { initChecklists, renderChecklists } from "./modules/checklists.js";
 import { initWhiteboard, renderWhiteboard } from "./modules/whiteboard.js";
 import { initSettings, renderSettings } from "./modules/settings.js";
-import { initAccount } from "./modules/account.js";
+import { initAccount, getCurrentUser } from "./modules/account.js";
 import { initProfile, renderProfile } from "./modules/profile.js";
 import { initBoards, renderBoards } from "./modules/boards.js";
+import { initAdmin, renderAdmin } from "./modules/admin.js";
 import { initBackground } from "./modules/background.js";
 import { initTheme } from "./theme.js";
 import { readPreference, savePreference } from "./storage.js";
@@ -41,6 +42,7 @@ const REAL_VIEWS = {
   whiteboard: { title: "Beyaz Tahta", render: renderWhiteboard },
   categories: { title: "Kategoriler", render: renderCategories },
   settings: { title: "Ayarlar", render: renderSettings },
+  admin: { title: "Yönetim", render: renderAdmin },
 };
 
 // Henüz yapılmamış sayfaların bilgileri. Şu an hepsi hazır olduğu için boş;
@@ -213,11 +215,14 @@ function init() {
   initWhiteboard();
   initSettings();
   initBoards();
+  initAdmin();
   // Hesap durumu sunucudan sorulur (yanıtı beklemeden devam ederiz); giriş / çıkışta
   // açık sayfa tazelenir, böylece Ortak Panolar doğru hali gösterir.
   initAccount({
     onChange: () => {
       renderProfile(); // giriş yapılınca üstteki simge ve selamlama hesaptaki adı kullansın
+      // Yönetim bağlantısı yalnızca yönetici hesabında görünür.
+      byId("adminNavItem").hidden = !(getCurrentUser() && getCurrentUser().isAdmin);
       refreshCurrentView("");
     },
   });

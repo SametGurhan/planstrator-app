@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import { authRouter, deleteExpiredSessions } from "./auth.js";
 import { syncRouter } from "./sync.js";
 import { boardsRouter } from "./boards.js";
+import { adminRouter } from "./admin.js";
 import { HttpError } from "./helpers.js";
 
 const projectRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -83,6 +84,7 @@ export function createApp() {
   app.use("/api/auth", authRouter);
   app.use("/api", syncRouter);
   app.use("/api", boardsRouter);
+  app.use("/api/admin", adminRouter);
 
   // Tanımlı olmayan API adresi
   app.use("/api", () => {

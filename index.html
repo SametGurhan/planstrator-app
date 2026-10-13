@@ -56,6 +56,7 @@
     <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
     <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.6-2.9 8.3-7 10-4.1-1.7-7-5.4-7-10V6l7-3zM9 12l2 2 4-4"/></symbol>
     <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
     <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v5h5"/></symbol>
@@ -110,6 +111,8 @@
         <ul class="nav__list">
           <li><a class="nav__link" href="#categories" data-view="categories"><svg class="icon"><use href="#i-tag"></use></svg><span class="nav__label">Kategoriler</span></a></li>
           <li><a class="nav__link" href="#settings" data-view="settings"><svg class="icon"><use href="#i-settings"></use></svg><span class="nav__label">Ayarlar</span></a></li>
+          <!-- Yalnızca yönetici hesabında görünür (admin.js); asıl yetki denetimi sunucudadır -->
+          <li id="adminNavItem" hidden><a class="nav__link" href="#admin" data-view="admin"><svg class="icon"><use href="#i-shield"></use></svg><span class="nav__label">Yönetim</span></a></li>
         </ul>
       </nav>
 
@@ -719,6 +722,39 @@
           <article class="card">
             <!-- Dikkat: "categoryList" id'si dashboard'daki dağılım listesine ait; id'ler sayfada benzersiz olmalı -->
             <ul class="task-list" id="categoryRows"></ul>
+          </article>
+        </section>
+
+        <!-- ============ YÖNETİM (yalnızca yönetici hesabı) ============ -->
+        <section class="view" id="view-admin" aria-labelledby="adminTitle" hidden>
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" id="adminTitle">Yönetim</h1>
+              <p class="page-sub" id="adminSummary"></p>
+            </div>
+            <button class="btn btn--ghost" id="adminRefreshBtn" type="button">Yenile</button>
+          </div>
+
+          <article class="card">
+            <p class="page-sub" id="adminMessage" role="status" hidden></p>
+            <!-- Tablo geniş olduğu için dar ekranda kendi içinde yana kayar; sayfa taşmaz -->
+            <div class="admin-table-wrap" id="adminTableWrap" tabindex="0" role="region" aria-label="Kullanıcı listesi" hidden>
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Ad</th>
+                    <th scope="col">E-posta</th>
+                    <th scope="col">Doğrulandı</th>
+                    <th scope="col">Kayıt tarihi</th>
+                    <th scope="col">Son giriş</th>
+                    <th scope="col">Pano</th>
+                    <th scope="col">Yedek</th>
+                    <th scope="col" aria-label="İşlem"></th>
+                  </tr>
+                </thead>
+                <tbody id="adminRows"></tbody>
+              </table>
+            </div>
           </article>
         </section>
 

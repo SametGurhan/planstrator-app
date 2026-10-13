@@ -95,6 +95,10 @@ export const api = {
   resendVerification: () => request("POST", "/auth/resend-verification"),
   deleteAccount: deleteAccount,
 
+  // Yönetici paneli (sunucu yalnızca yönetici hesabına yanıt verir)
+  listUsers: () => request("GET", "/admin/users"),
+  adminDeleteUser: (userId) => request("DELETE", `/admin/users/${userId}`),
+
   // Bulut yedeği
   loadBackup: () => request("GET", "/sync"),
   saveBackup: (backup) => request("PUT", "/sync", backup),

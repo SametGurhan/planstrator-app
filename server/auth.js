@@ -22,6 +22,7 @@ const MAX_LOGIN_ATTEMPTS = 10;       // 15 dakikada en fazla deneme
 const ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
 const VERIFY_HOURS = 24;            // doğrulama bağlantısının geçerlilik süresi
 const RESEND_WAIT_MS = 60 * 1000;   // yeniden gönderme için en az bekleme
+const SEEN_UPDATE_MS = 60 * 60 * 1000; // "son görülme" en sık bu aralıkla yazılır
 
 // ---------------- PAROLA ----------------
 
@@ -90,13 +91,17 @@ function readToken(request) {
 async function findUserByToken(token) {
   if (!token) return null;
   const row = await queryOne(`
-    SELECT users.id, users.email, users.name, users.email_verified, sessions.expires_at
+    SELECT users.id, users.email, users.name, users.email_verified, users.last_seen_at, sessions.expires_at
     FROM sessions
     JOIN users ON users.id = sessions.user_id
     WHERE sessions.token_hash = ?
   `, [hashToken(token)]);
 
   if (!row || row.expires_at < Date.now()) return null;
+  // "Son görülme" anını güncelle; her istekte yazmamak için en fazla saatte bir.
+  if (Date.now() - (row.last_seen_at || 0) > SEEN_UPDATE_MS) {
+    await run("UPDATE users SET last_seen_at = ? WHERE id = ?", [Date.now(), row.id]);
+  }
   return toPublicUser(row);
 }
 
@@ -107,8 +112,21 @@ function toPublicUser(row) {
     id: row.id,
     email: row.email,
     name: row.name,
-    emailVerified: !isMailEnabled() || row.email_verified === 1,
+    emailVerified: isVerified(row),
+    isAdmin: isAdminUser(row),
   };
+}
+
+function isVerified(row) {
+  return !isMailEnabled() || row.email_verified === 1;
+}
+
+// YÖNETİCİ: e-posta adresi ADMIN_EMAIL ortam değişkeninde yazan hesap(lar). Adres koda yazılmaz;
+// sunucunun ayarlarına girilir (birden çok adres virgülle ayrılır). Ayar yoksa yönetici de yoktur.
+// Adresin doğrulanmış olması şart: yoksa o adresle kayıt olabilen herkes yönetici olurdu.
+function isAdminUser(row) {
+  const admins = (process.env.ADMIN_EMAIL || "").toLowerCase().split(",").map((email) => email.trim());
+  return admins.includes(row.email) && isVerified(row);
 }
 
 // ---------------- E-POSTA DOĞRULAMA ----------------
@@ -144,6 +162,13 @@ export async function requireAuth(request, response, next) {
   next();
 }
 
+// requireAuth'tan SONRA konur: giriş yapmış kullanıcı yönetici değilse isteği 403 ile keser.
+// Menüdeki bağlantıyı gizlemek güvenlik değildir; asıl denetim burada, sunucuda yapılır.
+export function requireAdmin(request, response, next) {
+  if (!request.user.isAdmin) throw new HttpError(403, "Bu işlem için yetkin yok.");
+  next();
+}
+
 // ---------------- GİRİŞ DENEMELERİNİ SINIRLAMA ----------------
 // Parola tahmin saldırılarını yavaşlatır. Bellekte tutulur; sunucu yeniden başlayınca sıfırlanır.
 const attempts = new Map(); // anahtar -> { count, firstAt }
@@ -158,6 +183,37 @@ function checkAttempts(key) {
   if (entry.count > MAX_LOGIN_ATTEMPTS) {
     throw new HttpError(429, "Çok fazla deneme yapıldı. Lütfen 15 dakika sonra tekrar dene.");
   }
+}
+
+// Bir kullanıcıyı ve ona bağlı her şeyi siler. Hem "hesabımı sil" hem yönetici paneli kullanır.
+export async function deleteUserData(userId, email) {
+  const ownBoards = "SELECT id FROM boards WHERE owner_id = ?";
+  // Şemadaki ON DELETE CASCADE bunların çoğunu kendiliğinden siler; yine de tek tek yazıyoruz ki
+  // neyin silindiği açıkça görülsün ve veritabanı ayarına bağlı kalmasın.
+  // batch: ifadelerin ya hepsi uygulanır ya hiçbiri (yarım silinmiş hesap kalmaz).
+  await batch([
+    ["DELETE FROM sessions WHERE user_id = ?", [userId]],
+    ["DELETE FROM email_tokens WHERE user_id = ?", [userId]],
+    // Kişisel veriler (bulut yedeği)
+    ["DELETE FROM categories WHERE user_id = ?", [userId]],
+    ["DELETE FROM tasks WHERE user_id = ?", [userId]],
+    ["DELETE FROM pomodoro_sessions WHERE user_id = ?", [userId]],
+    ["DELETE FROM goals WHERE user_id = ?", [userId]],
+    ["DELETE FROM checklist_templates WHERE user_id = ?", [userId]],
+    ["DELETE FROM user_extras WHERE user_id = ?", [userId]],
+    // Sahibi olduğu ortak panolar, içindekilerle birlikte
+    [`DELETE FROM board_tasks WHERE board_id IN (${ownBoards})`, [userId]],
+    [`DELETE FROM board_invites WHERE board_id IN (${ownBoards})`, [userId]],
+    [`DELETE FROM board_members WHERE board_id IN (${ownBoards})`, [userId]],
+    ["DELETE FROM boards WHERE owner_id = ?", [userId]],
+    // Başkalarının panolarındaki izleri: üyelik ve davetler silinir,
+    // eklediği görevler panoda kalır ama artık ona bağlı değildir.
+    ["DELETE FROM board_members WHERE user_id = ?", [userId]],
+    ["DELETE FROM board_invites WHERE invited_by = ? OR email = ?", [userId, email]],
+    ["UPDATE board_tasks SET assignee_id = NULL WHERE assignee_id = ?", [userId]],
+    ["UPDATE board_tasks SET created_by = NULL WHERE created_by = ?", [userId]],
+    ["DELETE FROM users WHERE id = ?", [userId]],
+  ]);
 }
 
 // ---------------- ADRESLER ----------------
@@ -177,8 +233,8 @@ authRouter.post("/register", async (request, response) => {
   const existing = await queryOne("SELECT id FROM users WHERE email = ?", [email]);
   if (existing) throw new HttpError(409, "Bu e-posta ile zaten bir hesap var.");
 
-  const result = await run("INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)",
-    [email, name, hashPassword(password)]);
+  const result = await run("INSERT INTO users (email, name, password_hash, last_seen_at) VALUES (?, ?, ?, ?)",
+    [email, name, hashPassword(password), Date.now()]);
 
   const user = toPublicUser({ id: result.lastId, email: email, name: name, email_verified: 0 });
   const token = await startSession(response, user.id);
@@ -199,6 +255,7 @@ authRouter.post("/login", async (request, response) => {
   }
 
   const token = await startSession(response, user.id);
+  await run("UPDATE users SET last_seen_at = ? WHERE id = ?", [Date.now(), user.id]);
   response.json(withAppToken(request, { user: toPublicUser(user) }, token));
 });
 
@@ -256,34 +313,7 @@ authRouter.delete("/account", requireAuth, async (request, response) => {
   const row = await queryOne("SELECT password_hash FROM users WHERE id = ?", [request.user.id]);
   if (!row || !verifyPassword(password, row.password_hash)) throw new HttpError(403, "Parola hatalı.");
 
-  const userId = request.user.id;
-  const ownBoards = "SELECT id FROM boards WHERE owner_id = ?";
-  // Şemadaki ON DELETE CASCADE bunların çoğunu kendiliğinden siler; yine de tek tek yazıyoruz ki
-  // neyin silindiği açıkça görülsün ve veritabanı ayarına bağlı kalmasın.
-  // batch: ifadelerin ya hepsi uygulanır ya hiçbiri (yarım silinmiş hesap kalmaz).
-  await batch([
-    ["DELETE FROM sessions WHERE user_id = ?", [userId]],
-    ["DELETE FROM email_tokens WHERE user_id = ?", [userId]],
-    // Kişisel veriler (bulut yedeği)
-    ["DELETE FROM categories WHERE user_id = ?", [userId]],
-    ["DELETE FROM tasks WHERE user_id = ?", [userId]],
-    ["DELETE FROM pomodoro_sessions WHERE user_id = ?", [userId]],
-    ["DELETE FROM goals WHERE user_id = ?", [userId]],
-    ["DELETE FROM checklist_templates WHERE user_id = ?", [userId]],
-    ["DELETE FROM user_extras WHERE user_id = ?", [userId]],
-    // Sahibi olduğu ortak panolar, içindekilerle birlikte
-    [`DELETE FROM board_tasks WHERE board_id IN (${ownBoards})`, [userId]],
-    [`DELETE FROM board_invites WHERE board_id IN (${ownBoards})`, [userId]],
-    [`DELETE FROM board_members WHERE board_id IN (${ownBoards})`, [userId]],
-    ["DELETE FROM boards WHERE owner_id = ?", [userId]],
-    // Başkalarının panolarındaki izleri: üyelik ve davetler silinir,
-    // eklediği görevler panoda kalır ama artık ona bağlı değildir.
-    ["DELETE FROM board_members WHERE user_id = ?", [userId]],
-    ["DELETE FROM board_invites WHERE invited_by = ? OR email = ?", [userId, request.user.email]],
-    ["UPDATE board_tasks SET assignee_id = NULL WHERE assignee_id = ?", [userId]],
-    ["UPDATE board_tasks SET created_by = NULL WHERE created_by = ?", [userId]],
-    ["DELETE FROM users WHERE id = ?", [userId]],
-  ]);
+  await deleteUserData(request.user.id, request.user.email);
 
   response.setHeader("Set-Cookie", `${COOKIE_NAME}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`);
   response.json({ ok: true });

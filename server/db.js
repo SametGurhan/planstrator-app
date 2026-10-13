@@ -45,6 +45,7 @@ const client = createClient({
 // Sütun zaten varsa veritabanı "duplicate column" hatası verir; onu yok sayıyoruz.
 const MIGRATIONS = [
   "ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE users ADD COLUMN last_seen_at INTEGER",
 ];
 
 async function setUpTables() {

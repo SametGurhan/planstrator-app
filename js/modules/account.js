@@ -16,7 +16,7 @@ import { askConfirm } from "../components.js";
 import { byId, showToast } from "../utils.js";
 
 let status = "offline";  // "offline" | "guest" | "unverified" | "user"
-let currentUser = null;  // { id, email, name }
+let currentUser = null;  // { id, email, name, emailVerified, isAdmin }
 let formMode = "login";  // "login" | "register"
 let onChange = null;     // giriş durumu değişince app.js'e haber vermek için
 
