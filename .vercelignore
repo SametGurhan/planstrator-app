@@ -1,0 +1,8 @@
+# Vercel'e yüklenmeyecek dosyalar
+android
+www
+tests
+node_modules
+server/data
+*.apk
+.claude

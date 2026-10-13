@@ -1,0 +1,18 @@
+# Bağımlılıklar (npm install ile yeniden kurulur)
+node_modules/
+
+# Yerel veritabanı (kullanıcı hesapları burada durur; asla depoya girmemeli)
+server/data/
+
+# Gizli ayarlar ve Vercel bağlantı bilgisi
+.env*
+.vercel
+
+# Üretilen dosyalar
+www/
+*.apk
+
+# Editör / araç klasörleri
+.claude/
+.vscode/
+.idea/

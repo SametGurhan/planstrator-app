@@ -1,0 +1,65 @@
+/* ==========================================================
+   themes.css — Renk temaları
+   Kullanıcı Ayarlar sayfasından seçer; app, <html data-accent="blue"> özelliğini değiştirir.
+   Her tema yalnızca dört değer tanımlar:
+     --accent    ana renk          --accent-2  ikinci renk
+     --accent-3  üçüncü renk       --grad      buton ve vurgu geçişi
+   Diğer tüm tonlar (yumuşak arka plan, parlama, renk bulutları) styles.css'te
+   bu değerlerden türetilir. Yeni tema eklemek için buraya iki blok yazman yeterli.
+   ========================================================== */
+
+/* ---------- Açık tema ---------- */
+:root,
+[data-accent="blue"] {
+  --accent: #2563eb;
+  --accent-2: #0891b2;
+  --accent-3: #6366f1;
+  --grad: linear-gradient(120deg, #1d4ed8, #2563eb 55%, #0e7490);
+}
+[data-accent="violet"] {
+  --accent: #5b4ff0;
+  --accent-2: #12b5cb;
+  --accent-3: #d6338a;
+  --grad: linear-gradient(120deg, #5b4ff0, #8b3fe8 55%, #d6338a);
+}
+[data-accent="green"] {
+  --accent: #15803d;
+  --accent-2: #0d9488;
+  --accent-3: #65a30d;
+  --grad: linear-gradient(120deg, #166534, #15803d 55%, #0f766e);
+}
+[data-accent="sunset"] {
+  --accent: #c2410c;
+  --accent-2: #b45309;
+  --accent-3: #be185d;
+  --grad: linear-gradient(120deg, #c2410c, #dc2626 55%, #be185d);
+}
+[data-accent="rose"] {
+  --accent: #be185d;
+  --accent-2: #9333ea;
+  --accent-3: #e11d48;
+  --grad: linear-gradient(120deg, #be185d, #c026d3 55%, #7c3aed);
+}
+
+/* ---------- Koyu tema: aynı renklerin koyu zeminde okunan açık tonları ---------- */
+[data-theme="dark"][data-accent="blue"] { --accent: #6ea8ff; --accent-2: #38d6ee; --accent-3: #818cf8; }
+[data-theme="dark"][data-accent="violet"] { --accent: #9a8cff; --accent-2: #3fd5e8; --accent-3: #f472b6; }
+[data-theme="dark"][data-accent="green"] { --accent: #4ade80; --accent-2: #2dd4bf; --accent-3: #a3e635; }
+[data-theme="dark"][data-accent="sunset"] { --accent: #fb923c; --accent-2: #fbbf24; --accent-3: #f472b6; }
+[data-theme="dark"][data-accent="rose"] { --accent: #f472b6; --accent-2: #c084fc; --accent-3: #fb7185; }
+
+/* ---------- Arka plan sahnelerinin (orman, nehir) renkleri ---------- */
+:root {
+  --scene-far: #8fc3a0;
+  --scene-mid: #58a276;
+  --scene-near: #2f7d54;
+  --scene-water: #58b4e8;
+  --scene-strength: 1; /* sahnenin genel belirginliği */
+}
+[data-theme="dark"] {
+  --scene-far: #2a5d49;
+  --scene-mid: #1d4636;
+  --scene-near: #123226;
+  --scene-water: #2a7fb0;
+  --scene-strength: 1.25;
+}

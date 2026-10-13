@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="light" data-accent="blue">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Planstrator</title>
+  <meta name="description" content="Pomodoro, planlama ve kişisel görev yönetim paneli">
+
+  <!-- PWA: uygulamanın telefona / bilgisayara "kurulabilir" olmasını sağlayan dosya -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#091729">
+  <link rel="icon" href="assets/icon-192.png" type="image/png">
+  <!-- iPhone / iPad: "Ana Ekrana Ekle" ile kurulunca tam ekran uygulama gibi açılsın.
+       iOS simgenin köşelerini kendisi yuvarlar; bu yüzden tam kare (maskable) simgeyi veriyoruz. -->
+  <link rel="apple-touch-icon" href="assets/icon-maskable-512.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Planstrator">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/effects.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">İçeriğe geç</a>
+
+  <!-- Hareketli dalga arka planı: js/modules/background.js çizer -->
+  <canvas class="bg-canvas" id="bgCanvas" aria-hidden="true"></canvas>
+
+  <!--
+    İKON KÜTÜPHANESİ (SVG sprite)
+    Her <symbol> bir ikondur. Sayfanın herhangi bir yerinde
+    <svg class="icon"><use href="#i-home"></use></svg> yazarak kullanılır.
+    Böylece aynı ikonu tekrar tekrar çizmek zorunda kalmayız.
+  -->
+  <svg class="sprite" aria-hidden="true">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-tasks" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 12l3 3 5-6"/></symbol>
+    <symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M10 6h11M10 12h11M10 18h11M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5zM9 12h6M9 16h6"/></symbol>
+    <symbol id="i-plane" viewBox="0 0 24 24"><path d="M21 3L3 10l7 3 3 7zM10 13L21 3"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v5h5"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="i-board" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4M7 13l3-4 3 2 4-4"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5M20 9H10a6 6 0 0 0 0 12h3"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></symbol>
+    <symbol id="i-columns" viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="9.5" y="4" width="5" height="11" rx="1.5"/><rect x="16" y="4" width="5" height="7" rx="1.5"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.8a3.5 3.5 0 0 1 0 6.4M17.5 14.3c2.4.7 4 2.7 4 5.7"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M3 13l3-9h12l3 9v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM3 13h5l1 3h6l1-3h5"/></symbol>
+  </svg>
+
+  <div class="app" id="app">
+
+    <!-- ============ SOL MENÜ ============ -->
+    <aside class="sidebar" id="sidebar" aria-label="Ana menü">
+      <div class="brand">
+        <img class="brand__logo" src="assets/icon-192.png" alt="" width="34" height="34">
+        <span class="brand__name">Planstrator</span>
+        <!-- Menüyü daralt / genişlet (alttaki düğmeyle aynı işi yapar) -->
+        <button class="icon-btn icon-btn--sm brand__collapse" id="collapseTopBtn" type="button" aria-label="Menüyü daralt" aria-expanded="true" title="Menüyü daralt">
+          <svg class="icon"><use href="#i-chevron"></use></svg>
+        </button>
+      </div>
+
+      <nav class="nav">
+        <p class="nav__title">Genel</p>
+        <ul class="nav__list">
+          <li><a class="nav__link" href="#dashboard" data-view="dashboard"><svg class="icon"><use href="#i-home"></use></svg><span class="nav__label">Dashboard</span></a></li>
+          <li><a class="nav__link" href="#tasks" data-view="tasks"><svg class="icon"><use href="#i-tasks"></use></svg><span class="nav__label">Görevler</span></a></li>
+          <li><a class="nav__link" href="#kanban" data-view="kanban"><svg class="icon"><use href="#i-columns"></use></svg><span class="nav__label">Pano</span></a></li>
+          <li><a class="nav__link" href="#boards" data-view="boards"><svg class="icon"><use href="#i-users"></use></svg><span class="nav__label">Ortak Panolar</span></a></li>
+          <li><a class="nav__link" href="#pomodoro" data-view="pomodoro"><svg class="icon"><use href="#i-timer"></use></svg><span class="nav__label">Pomodoro</span></a></li>
+          <li><a class="nav__link" href="#planner" data-view="planner"><svg class="icon"><use href="#i-calendar"></use></svg><span class="nav__label">Planlayıcı</span></a></li>
+        </ul>
+
+        <p class="nav__title">Organizasyon</p>
+        <ul class="nav__list">
+          <li><a class="nav__link" href="#checklists" data-view="checklists"><svg class="icon"><use href="#i-list"></use></svg><span class="nav__label">Kontrol Listeleri</span></a></li>
+          <li><a class="nav__link" href="#goals" data-view="goals"><svg class="icon"><use href="#i-target"></use></svg><span class="nav__label">Hedefler</span></a></li>
+          <li><a class="nav__link" href="#notes" data-view="notes"><svg class="icon"><use href="#i-note"></use></svg><span class="nav__label">Notlar</span></a></li>
+          <li><a class="nav__link" href="#whiteboard" data-view="whiteboard"><svg class="icon"><use href="#i-board"></use></svg><span class="nav__label">Beyaz Tahta</span></a></li>
+          <li><a class="nav__link" href="#travel" data-view="travel"><svg class="icon"><use href="#i-plane"></use></svg><span class="nav__label">Seyahat</span></a></li>
+        </ul>
+
+        <p class="nav__title">Sistem</p>
+        <ul class="nav__list">
+          <li><a class="nav__link" href="#categories" data-view="categories"><svg class="icon"><use href="#i-tag"></use></svg><span class="nav__label">Kategoriler</span></a></li>
+          <li><a class="nav__link" href="#settings" data-view="settings"><svg class="icon"><use href="#i-settings"></use></svg><span class="nav__label">Ayarlar</span></a></li>
+        </ul>
+      </nav>
+
+      <button class="sidebar__collapse" id="collapseBtn" type="button" aria-label="Menüyü daralt" aria-expanded="true">
+        <svg class="icon"><use href="#i-chevron"></use></svg>
+        <span class="nav__label">Menüyü daralt</span>
+      </button>
+    </aside>
+
+    <!-- Mobilde menü açıkken arkadaki karartma -->
+    <div class="backdrop" id="backdrop" hidden></div>
+
+    <div class="main-col">
+
+      <!-- ============ ÜST ÇUBUK ============ -->
+      <header class="topbar">
+        <button class="icon-btn topbar__menu" id="menuBtn" type="button" aria-label="Menüyü aç">
+          <svg class="icon"><use href="#i-menu"></use></svg>
+        </button>
+
+        <div class="topbar__date">
+          <span class="topbar__weekday" id="topbarWeekday"></span>
+          <span class="topbar__full" id="topbarDate"></span>
+        </div>
+
+        <label class="search">
+          <span class="visually-hidden">Görev ve notlarda ara</span>
+          <svg class="icon"><use href="#i-search"></use></svg>
+          <input type="search" id="searchInput" placeholder="Görev ve notlarda ara…" autocomplete="off">
+        </label>
+
+        <button class="icon-btn" id="themeBtn" type="button" aria-label="Koyu temaya geç">
+          <svg class="icon"><use id="themeIcon" href="#i-moon"></use></svg>
+        </button>
+        <!-- Ad varsa baş harfini, yoksa kişi simgesini profile.js yazar; tıklanınca hesap penceresi açılır -->
+        <a class="avatar" id="avatarLink" href="#settings" aria-label="Profil ve hesap" data-open-account></a>
+        <a class="icon-btn" href="#settings" aria-label="Ayarlar" title="Ayarlar">
+          <svg class="icon"><use href="#i-gear"></use></svg>
+        </a>
+      </header>
+
+      <main class="content" id="main" tabindex="-1">
+
+        <!-- ============ DASHBOARD ============ -->
+        <section class="view" id="view-dashboard" aria-labelledby="dashTitle">
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" id="dashTitle">Merhaba</h1>
+              <p class="page-sub" id="dashSummary"></p>
+            </div>
+
+            <form class="quick-add" id="quickAddForm" novalidate>
+              <label class="visually-hidden" for="quickAddInput">Hızlı görev ekle</label>
+              <input class="input" type="text" id="quickAddInput" placeholder="Bugün için hızlı görev ekle…" maxlength="120" autocomplete="off">
+              <button class="btn btn--primary" type="submit">
+                <svg class="icon"><use href="#i-plus"></use></svg>
+                <span>Ekle</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- İstatistik kartları: içeriği dashboard.js doldurur -->
+          <div class="stat-grid" id="statGrid"></div>
+
+          <div class="dash-grid">
+            <div class="dash-col">
+              <article class="card">
+                <header class="card__head">
+                  <h2 class="card__title">Bugünün planı</h2>
+                  <span class="badge" id="todayCount"></span>
+                </header>
+                <ul class="task-list" id="todayList"></ul>
+              </article>
+
+              <article class="card">
+                <header class="card__head">
+                  <h2 class="card__title">Yaklaşan işler</h2>
+                  <span class="card__hint">Önümüzdeki 7 gün</span>
+                </header>
+                <ul class="task-list" id="upcomingList"></ul>
+              </article>
+            </div>
+
+            <div class="dash-col">
+              <article class="card">
+                <header class="card__head">
+                  <h2 class="card__title">Günlük hedefler</h2>
+                </header>
+                <div class="goal-row">
+                  <div class="ring" id="taskRing" role="img">
+                    <span class="ring__value" id="taskRingValue"></span>
+                  </div>
+                  <ul class="goal-list" id="goalList"></ul>
+                </div>
+              </article>
+
+              <article class="card card--accent">
+                <header class="card__head">
+                  <h2 class="card__title">Pomodoro</h2>
+                  <span class="card__hint" id="timerPreviewMode">Odaklanma</span>
+                </header>
+                <p class="timer-preview" id="timerPreview">25:00</p>
+                <a class="btn btn--light" href="#pomodoro">
+                  <svg class="icon"><use href="#i-play"></use></svg>
+                  <span>Zamanlayıcıya git</span>
+                </a>
+              </article>
+
+              <article class="card">
+                <header class="card__head">
+                  <h2 class="card__title">Kategori dağılımı</h2>
+                  <span class="card__hint">Açık görevler</span>
+                </header>
+                <ul class="bar-list" id="categoryList"></ul>
+              </article>
+
+              <article class="card">
+                <header class="card__head">
+                  <h2 class="card__title">Geciken görevler</h2>
+                  <span class="badge badge--danger" id="overdueCount"></span>
+                </header>
+                <ul class="task-list" id="overdueList"></ul>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ GÖREVLER ============ -->
+        <section class="view" id="view-tasks" aria-labelledby="tasksTitle" hidden>
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" id="tasksTitle">Görevler</h1>
+              <p class="page-sub" id="tasksSummary"></p>
+            </div>
+            <button class="btn btn--primary" id="newTaskBtn" type="button">
+              <svg class="icon"><use href="#i-plus"></use></svg>
+              <span>Yeni görev</span>
+            </button>
+          </div>
+
+          <article class="card">
+            <div class="segmented" id="taskFilters" role="group" aria-label="Duruma göre filtrele">
+              <button class="segmented__btn" type="button" data-filter="open">Açık <span class="segmented__count" id="countOpen"></span></button>
+              <button class="segmented__btn" type="button" data-filter="done">Tamamlanan <span class="segmented__count" id="countDone"></span></button>
+              <button class="segmented__btn" type="button" data-filter="all">Tümü <span class="segmented__count" id="countAll"></span></button>
+            </div>
+
+            <div class="toolbar">
+              <select class="input" id="filterCategory" aria-label="Kategoriye göre filtrele"></select>
+              <select class="input" id="filterPriority" aria-label="Önceliğe göre filtrele">
+                <option value="">Tüm öncelikler</option>
+                <option value="urgent">Acil</option>
+                <option value="high">Yüksek</option>
+                <option value="normal">Normal</option>
+                <option value="low">Düşük</option>
+              </select>
+              <select class="input" id="filterTag" aria-label="Etikete göre filtrele"></select>
+              <select class="input" id="sortSelect" aria-label="Sıralama">
+                <option value="smart">Sırala: Tarih</option>
+                <option value="priority">Sırala: Öncelik</option>
+                <option value="title">Sırala: Başlık (A-Z)</option>
+                <option value="created">Sırala: En yeni eklenen</option>
+              </select>
+            </div>
+
+            <ul class="task-list" id="taskList"></ul>
+          </article>
+
+          <p class="data-note">
+            Verilerin yalnızca bu tarayıcıda saklanır.
+            <button class="link-btn" id="resetDataBtn" type="button">Tüm verileri sıfırla</button>
+          </p>
+        </section>
+
+        <!-- ============ PANO (KANBAN) ============ -->
+        <section class="view" id="view-kanban" aria-labelledby="kanbanTitle" hidden>
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" id="kanbanTitle">Pano</h1>
+              <p class="page-sub" id="kanbanSummary"></p>
+            </div>
+            <div class="page-head__actions">
+              <select class="input" id="kanbanCategory" aria-label="Kategoriye göre filtrele"></select>
+              <button class="btn btn--primary" id="kanbanNewBtn" type="button">
+                <svg class="icon"><use href="#i-plus"></use></svg>
+                <span>Yeni görev</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Sütunları ve kartları kanban.js çizer -->
+          <div class="kanban" id="kanbanBoard"></div>
+        </section>
+
+        <!-- ============ ORTAK PANOLAR ============ -->
+        <section class="view" id="view-boards" aria-labelledby="boardsTitle" hidden>
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" id="boardsTitle">Ortak Panolar</h1>
+              <p class="page-sub">Arkadaşlarını e-posta ile davet et, görevleri birlikte takip edin.</p>
+            </div>
+          </div>
+
+          <!-- Giriş yapılmamışsa ya da sunucu yoksa gösterilen bilgi -->
+          <div class="card empty" id="boardsGate"></div>
+
+          <div id="boardsContent" hidden>
+            <div class="invite-list" id="boardInvites"></div>
+
+            <form class="inline-add new-board" id="newBoardForm" novalidate>
+              <input class="input" type="text" id="newBoardName" maxlength="60" placeholder="Yeni pano adı (ör. İzmir gezisi)" aria-label="Yeni pano adı" autocomplete="off">
+              <button class="btn btn--primary" type="submit">Pano oluştur</button>
+            </form>
+
+            <div class="tile-grid" id="boardTiles"></div>
+            <!-- Seçili panonun üyelerini ve görevlerini boards.js çizer -->
+            <div id="boardDetail"></div>
+          </div>
+        </section>
+
+        <!-- ============ POMODORO ============ -->
+        <section class="view" id="view-pomodoro" aria-labelledby="pomodoroTitle" hidden>
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" id="pomodoroTitle">Pomodoro</h1>
+              <p class="page-sub" id="pomodoroSummary"></p>
+            </div>
+          </div>
+
+          <div class="dash-grid">
+            <div class="dash-col">
+              <article class="card timer-card">
+                <div class="segmented" id="timerModes" role="group" aria-label="Zamanlayıcı modu">
+                  <button class="segmented__btn" type="button" data-mode="custom">Serbest</button>
+                  <button class="segmented__btn" type="button" data-mode="focus">Odaklanma</button>
+                  <button class="segmented__btn" type="button" data-mode="shortBreak">Kısa mola</button>
+                  <button class="segmented__btn" type="button" data-mode="longBreak">Uzun mola</button>
+                </div>
+
+                <!-- Yalnızca "Serbest" modda görünür: istenen süre yazılır ya da hazır sürelerden seçilir -->
+                <div class="custom-time" id="customField" hidden>
+                  <div class="custom-time__inputs" id="customInputs">
+                    <div class="custom-time__part">
+                      <input class="input" type="number" id="customHours" min="0" max="12" inputmode="numeric" aria-describedby="customError">
+                      <label for="customHours">saat</label>
+                    </div>
+                    <span class="custom-time__sep" aria-hidden="true">:</span>
+                    <div class="custom-time__part">
+                      <input class="input" type="number" id="customMins" min="0" max="59" inputmode="numeric" aria-describedby="customError">
+                      <label for="customMins">dakika</label>
+                    </div>
+                    <span class="custom-time__sep" aria-hidden="true">:</span>
+                    <div class="custom-time__part">
+                      <input class="input" type="number" id="customSecs" min="0" max="59" inputmode="numeric" aria-describedby="customError">
+                      <label for="customSecs">saniye</label>
+                    </div>
+                  </div>
+                  <div class="custom-time__presets" id="customPresets" role="group" aria-label="Hazır süreler (dakika)">
+                    <button class="chip" type="button" data-minutes="10">10 dk</button>
+                    <button class="chip" type="button" data-minutes="15">15 dk</button>
+                    <button class="chip" type="button" data-minutes="30">30 dk</button>
+                    <button class="chip" type="button" data-minutes="45">45 dk</button>
+                    <button class="chip" type="button" data-minutes="60">1 sa</button>
+                    <button class="chip" type="button" data-minutes="90">1,5 sa</button>
+                  </div>
+                  <p class="field__error" id="customError" hidden></p>
+                </div>
+
+                <div class="ring ring--timer" id="timerRing">
+                  <div class="ring__center">
+                    <span class="ring__value" id="timerDisplay" role="timer">25:00</span>
+                    <span class="ring__label" id="timerStatus"></span>
+                  </div>
+                </div>
+
+                <!-- Uzun molaya kadar tamamlanan odak seansları (noktaları pomodoro.js çizer) -->
+                <div class="cycle" id="timerCycle" role="img"></div>
+
+                <div class="field timer-card__task">
+                  <label for="timerTask">Üzerinde çalıştığın görev</label>
+                  <select class="input" id="timerTask"></select>
+                </div>
+
+                <div class="timer-card__actions">
+                  <button class="btn btn--primary btn--lg" id="timerMainBtn" type="button">Başlat</button>
+                  <button class="btn btn--ghost btn--lg" id="timerResetBtn" type="button">Sıfırla</button>
+                </div>
+              </article>
+
+              <article class="card">
+                <header class="card__head">
+                  <h2 class="card__title">Oturum geçmişi</h2>
+                  <button class="link-btn" id="clearSessionsBtn" type="button">Geçmişi sil</button>
+                </header>
+                <ul class="task-list" id="sessionList"></ul>
+              </article>
+            </div>
+
+            <div class="dash-col">
+              <article class="card">
+                <header class="card__head">
+                  <h2 class="card__title">Süre ayarları</h2>
+                </header>
+                <form class="settings-form" id="settingsForm" novalidate>
+                  <div class="field-row">
+                    <div class="field">
+                      <label for="setFocus">Odaklanma (dk)</label>
+                      <input class="input" type="number" id="setFocus" min="1" max="180" inputmode="numeric">
+                    </div>
+                    <div class="field">
+                      <label for="setShort">Kısa mola (dk)</label>
+                      <input class="input" type="number" id="setShort" min="1" max="60" inputmode="numeric">
+                    </div>
+                  </div>
+                  <div class="field-row">
+                    <div class="field">
+                      <label for="setLong">Uzun mola (dk)</label>
+                      <input class="input" type="number" id="setLong" min="1" max="120" inputmode="numeric">
+                    </div>
+                    <div class="field">
+                      <label for="setCycle">Uzun mola öncesi seans</label>
+                      <input class="input" type="number" id="setCycle" min="2" max="10" inputmode="numeric">
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="setGoal">Günlük seans hedefi</label>
+                    <input class="input" type="number" id="setGoal" min="1" max="20" inputmode="numeric">
+                  </div>
+                  <p class="field__error" id="settingsError" hidden></p>
+                  <button class="btn btn--primary" type="submit">Ayarları kaydet</button>
+                </form>
+              </article>
+
+              <article class="card">
+                <header class="card__head">
+                  <h2 class="card__title">Bildirim sesi</h2>
+                </header>
+                <!-- Bu ayarlar değiştiği anda kaydedilir -->
+                <div class="settings-form">
+                  <label class="check-row">
+                    <input class="task__check" type="checkbox" id="setSound">
+                    <span>Oturum bitince ses çal</span>
+                  </label>
+                  <div class="field">
+                    <label for="setSoundType">Ses</label>
+                    <div class="inline-add">
+                      <select class="input" id="setSoundType"></select>
+                      <button class="btn btn--ghost" id="soundTestBtn" type="button">Dinle</button>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="setVolume">Ses seviyesi <span class="field__value" id="volumeValue"></span></label>
+                    <input class="range" type="range" id="setVolume" min="0" max="100" step="5">
+                  </div>
+                </div>
+              </article>
+
+              <article class="card">
+                <header class="card__head">
+                  <h2 class="card__title">Bildirimler</h2>
+                </header>
+                <p class="page-sub" id="notifyHint"></p>
+                <button class="btn btn--ghost notify-btn" id="notifyBtn" type="button">Tarayıcı bildirimlerini aç</button>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ PLANLAYICI ============ -->
+        <section class="view" id="view-planner" aria-labelledby="plannerTitle" hidden>
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" id="plannerTitle">Planlayıcı</h1>
+              <p class="page-sub" id="plannerRange" aria-live="polite"></p>
+            </div>
+            <button class="btn btn--primary" id="plannerNewBtn" type="button">
+              <svg class="icon"><use href="#i-plus"></use></svg>
+              <span>Yeni görev</span>
+            </button>
+          </div>
+
+          <div class="planner-bar">
+            <div class="planner-bar__nav">
+              <button class="icon-btn" id="plannerPrev" type="button" aria-label="Önceki">
+                <svg class="icon"><use href="#i-chevron"></use></svg>
+              </button>
+              <button class="btn btn--ghost btn--sm" id="plannerToday" type="button">Bugün</button>
+              <button class="icon-btn" id="plannerNext" type="button" aria-label="Sonraki">
+                <svg class="icon"><use href="#i-next"></use></svg>
+              </button>
+            </div>
+            <div class="segmented" id="plannerViews" role="group" aria-label="Takvim görünümü">
+              <button class="segmented__btn" type="button" data-view-mode="day">Gün</button>
+              <button class="segmented__btn" type="button" data-view-mode="week">Hafta</button>
+              <button class="segmented__btn" type="button" data-view-mode="month">Ay</button>
+            </div>
+          </div>
+
+          <!-- İçerikleri planner.js çizer -->
+          <div class="stat-grid" id="plannerStats"></div>
+          <div id="plannerBody"></div>
+        </section>
+
+        <!-- ============ KONTROL LİSTELERİ ============ -->
+        <section class="view" id="view-checklists" aria-labelledby="checklistsTitle" hidden>
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" id="checklistsTitle">Kontrol Listeleri</h1>
+              <p class="page-sub" id="checklistsSummary"></p>
+            </div>
+            <button class="btn btn--primary" id="newTemplateBtn" type="button">
+              <svg class="icon"><use href="#i-plus"></use></svg>
+              <span>Yeni şablon</span>
+            </button>
+          </div>
+
+          <h2 class="section-title" id="instanceHeading">Aktif listeler</h2>
+          <div class="tile-grid tile-grid--wide" id="instanceList"></div>
+
+          <h2 class="section-title">Şablonlar</h2>
+          <div class="tile-grid" id="templateList"></div>
+        </section>
+
+        <!-- ============ HEDEFLER VE ALIŞKANLIKLAR ============ -->
+        <section class="view" id="view-goals" aria-labelledby="goalsTitle" hidden>
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" id="goalsTitle">Hedefler ve Alışkanlıklar</h1>
+              <p class="page-sub" id="goalsSummary"></p>
+            </div>
+            <div class="page-head__actions">
+              <button class="btn btn--ghost" id="newHabitBtn" type="button">
+                <svg class="icon"><use href="#i-plus"></use></svg>
+                <span>Yeni alışkanlık</span>
+              </button>
+              <button class="btn btn--primary" id="newGoalBtn" type="button">
+                <svg class="icon"><use href="#i-plus"></use></svg>
+                <span>Yeni hedef</span>
+              </button>
+            </div>
+          </div>
+
+          <article class="card">
+            <header class="card__head">
+              <h2 class="card__title">Alışkanlıklar</h2>
+              <span class="card__hint">Bu hafta · güne tıklayarak işaretle</span>
+            </header>
+            <ul class="task-list" id="habitList"></ul>
+          </article>
+
+          <h2 class="section-title">Hedefler</h2>
+          <div class="tile-grid tile-grid--wide" id="goalCards"></div>
+        </section>
+
+        <!-- ============ NOTLAR ============ -->
+        <section class="view" id="view-notes" aria-labelledby="notesTitle" hidden>
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" id="notesTitle">Notlar</h1>
+              <p class="page-sub" id="notesSummary"></p>
+            </div>
+            <div class="page-head__actions">
+              <select class="input" id="noteFilterCategory" aria-label="Kategoriye göre filtrele"></select>
+              <button class="btn btn--primary" id="newNoteBtn" type="button">
+                <svg class="icon"><use href="#i-plus"></use></svg>
+                <span>Yeni not</span>
+              </button>
+            </div>
+          </div>
+          <div class="tile-grid tile-grid--wide" id="noteGrid"></div>
+        </section>
+
+        <!-- ============ SEYAHAT ============ -->
+        <section class="view" id="view-travel" aria-labelledby="travelTitle" hidden>
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" id="travelTitle">Seyahat</h1>
+              <p class="page-sub" id="travelSummary"></p>
+            </div>
+            <button class="btn btn--primary" id="newTripBtn" type="button">
+              <svg class="icon"><use href="#i-plus"></use></svg>
+              <span>Yeni seyahat</span>
+            </button>
+          </div>
+          <div class="tile-grid" id="tripList"></div>
+          <!-- Seçili seyahatin ayrıntısını travel.js çizer -->
+          <div id="tripDetail"></div>
+        </section>
+
+        <!-- ============ BEYAZ TAHTA ============ -->
+        <section class="view" id="view-whiteboard" aria-labelledby="whiteboardTitle" hidden>
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" id="whiteboardTitle">Beyaz Tahta</h1>
+              <p class="page-sub">Çizerek düşün: fikirlerini, şemalarını ve notlarını karala. Çizimin kendiliğinden kaydedilir.</p>
+            </div>
+          </div>
+
+          <article class="card board-card">
+            <div class="board-bar">
+              <div class="segmented" id="boardTools" role="group" aria-label="Çizim aracı">
+                <button class="segmented__btn" type="button" data-tool="pen">Kalem</button>
+                <button class="segmented__btn" type="button" data-tool="eraser">Silgi</button>
+                <button class="segmented__btn" type="button" data-tool="line">Çizgi</button>
+                <button class="segmented__btn" type="button" data-tool="rect">Dikdörtgen</button>
+                <button class="segmented__btn" type="button" data-tool="ellipse">Elips</button>
+              </div>
+
+              <!-- Renk düğmelerini whiteboard.js ekler; sondaki kutu özel renk içindir -->
+              <div class="board-bar__group" id="boardColors" role="group" aria-label="Renk">
+                <input class="color-dot color-dot--custom" type="color" id="boardColorCustom" value="#0891b2" aria-label="Özel renk seç">
+              </div>
+
+              <label class="board-bar__group board-bar__size">
+                <span>Kalınlık <span class="field__value" id="boardSizeValue">4</span></span>
+                <input class="range" type="range" id="boardSize" min="1" max="30" value="4">
+              </label>
+
+              <div class="board-bar__group">
+                <button class="icon-btn" id="boardUndo" type="button" aria-label="Geri al" title="Geri al (Ctrl+Z)"><svg class="icon"><use href="#i-undo"></use></svg></button>
+                <button class="icon-btn" id="boardRedo" type="button" aria-label="İleri al" title="İleri al (Ctrl+Y)"><svg class="icon"><use href="#i-redo"></use></svg></button>
+                <button class="btn btn--ghost btn--sm" id="boardClear" type="button">Temizle</button>
+                <button class="btn btn--ghost btn--sm" id="boardDownload" type="button">
+                  <svg class="icon"><use href="#i-download"></use></svg>
+                  <span>PNG indir</span>
+                </button>
+              </div>
+            </div>
+
+            <canvas class="board" id="boardCanvas" role="img" aria-label="Çizim alanı"></canvas>
+          </article>
+        </section>
+
+        <!-- ============ AYARLAR ============ -->
+        <section class="view" id="view-settings" aria-labelledby="settingsTitle" hidden>
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" id="settingsTitle">Ayarlar</h1>
+              <p class="page-sub">Görünümü kendine göre düzenle. Seçimlerin anında uygulanır ve kaydedilir.</p>
+            </div>
+          </div>
+
+          <article class="card settings-card settings-card--first">
+            <header class="card__head"><h2 class="card__title">Profil</h2></header>
+            <div class="field profile-field">
+              <label for="profileName">Adın</label>
+              <input class="input" type="text" id="profileName" maxlength="40" autocomplete="given-name" aria-describedby="profileHint">
+              <p class="card__hint" id="profileHint"></p>
+            </div>
+          </article>
+
+          <article class="card settings-card">
+            <header class="card__head"><h2 class="card__title">Tema</h2></header>
+
+            <h3 class="option-title">Mod</h3>
+            <div class="option-grid" id="modeOptions" role="group" aria-label="Açık ya da koyu mod">
+              <button class="option option--mode" type="button" data-mode-option="light"><span class="option__swatch option__swatch--light"></span><span class="option__label">Açık</span></button>
+              <button class="option option--mode" type="button" data-mode-option="dark"><span class="option__swatch option__swatch--dark"></span><span class="option__label">Koyu</span></button>
+            </div>
+
+            <h3 class="option-title">Renk</h3>
+            <!-- Düğmeleri settings.js üretir -->
+            <div class="option-grid" id="accentOptions" role="group" aria-label="Renk teması"></div>
+
+            <h3 class="option-title">Arka plan</h3>
+            <div class="option-grid" id="backgroundOptions" role="group" aria-label="Arka plan sahnesi"></div>
+          </article>
+
+          <article class="card settings-card">
+            <header class="card__head"><h2 class="card__title">Veri ve yedekleme</h2></header>
+            <p class="page-sub">Verilerin bu cihazdaki tarayıcıda saklanır (yaklaşık 5 MB sınır). Tarayıcı verisini temizlersen silinir; arada bir yedek indirmeni öneririz.</p>
+            <div class="settings-card__actions">
+              <button class="btn btn--ghost" id="exportBtn" type="button">
+                <svg class="icon"><use href="#i-download"></use></svg>
+                <span>Yedeği indir (JSON)</span>
+              </button>
+              <button class="btn btn--ghost" id="importBtn" type="button">Yedekten geri yükle</button>
+              <input class="visually-hidden" type="file" id="importFile" accept="application/json,.json" aria-label="Yedek dosyası seç" tabindex="-1">
+            </div>
+          </article>
+
+          <!-- Hesap: ayrıntılar ayrı bir pencerede (accountDialog) açılır -->
+          <article class="card settings-card">
+            <header class="card__head"><h2 class="card__title">Hesap ve bulut yedeği</h2></header>
+            <p class="page-sub" id="accountSummary"></p>
+            <div class="settings-card__actions">
+              <button class="btn btn--ghost" type="button" data-open-account>Hesabı aç</button>
+            </div>
+          </article>
+
+          <p class="data-note">Pomodoro süreleri ve bildirim sesi <a class="link-btn" href="#pomodoro">Pomodoro sayfasında</a>.</p>
+        </section>
+
+        <!-- ============ KATEGORİLER ============ -->
+        <section class="view" id="view-categories" aria-labelledby="categoriesTitle" hidden>
+          <div class="page-head">
+            <div>
+              <h1 class="page-title" id="categoriesTitle">Kategoriler</h1>
+              <p class="page-sub" id="categoriesSummary"></p>
+            </div>
+            <button class="btn btn--primary" id="newCategoryBtn" type="button">
+              <svg class="icon"><use href="#i-plus"></use></svg>
+              <span>Yeni kategori</span>
+            </button>
+          </div>
+
+          <article class="card">
+            <!-- Dikkat: "categoryList" id'si dashboard'daki dağılım listesine ait; id'ler sayfada benzersiz olmalı -->
+            <ul class="task-list" id="categoryRows"></ul>
+          </article>
+        </section>
+
+        <!-- ============ DİĞER SAYFALAR (şimdilik yer tutucu) ============ -->
+        <section class="view" id="view-placeholder" aria-labelledby="phTitle" hidden>
+          <div class="placeholder">
+            <span class="placeholder__icon"><svg class="icon"><use id="phIcon" href="#i-tasks"></use></svg></span>
+            <span class="badge" id="phStage"></span>
+            <h1 class="page-title" id="phTitle"></h1>
+            <p class="page-sub" id="phText"></p>
+            <ul class="placeholder__list" id="phList"></ul>
+            <a class="btn btn--primary" href="#dashboard">Dashboard'a dön</a>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!--
+    GÖREV FORMU
+    <dialog> tarayıcının hazır pencere elemanıdır: showModal() ile açılır,
+    Esc ile kapanır ve klavye odağını pencerenin içinde tutar.
+  -->
+  <dialog class="modal" id="taskDialog" aria-labelledby="taskDialogTitle">
+    <form class="modal__body" id="taskForm" novalidate>
+      <header class="modal__head">
+        <h2 class="modal__title" id="taskDialogTitle">Yeni görev</h2>
+        <button class="icon-btn icon-btn--sm" id="taskDialogClose" type="button" aria-label="Kapat">
+          <svg class="icon"><use href="#i-close"></use></svg>
+        </button>
+      </header>
+
+      <div class="field">
+        <label for="taskTitle">Başlık</label>
+        <input class="input" type="text" id="taskTitle" maxlength="120" autocomplete="off" aria-describedby="taskTitleError">
+        <p class="field__error" id="taskTitleError" hidden></p>
+      </div>
+
+      <div class="field">
+        <label for="taskDescription">Açıklama</label>
+        <textarea class="input input--area" id="taskDescription" maxlength="1000"></textarea>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="taskPriority">Öncelik</label>
+          <select class="input" id="taskPriority">
+            <option value="low">Düşük</option>
+            <option value="normal">Normal</option>
+            <option value="high">Yüksek</option>
+            <option value="urgent">Acil</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="taskCategory">Kategori</label>
+          <!-- Kategori seçeneklerini tasks.js ekler -->
+          <select class="input" id="taskCategory">
+            <option value="">Kategorisiz</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="taskDueDate">Tarih</label>
+          <input class="input" type="date" id="taskDueDate" aria-describedby="taskDueDateError">
+          <p class="field__error" id="taskDueDateError" hidden></p>
+        </div>
+        <div class="field">
+          <label for="taskStartTime">Saat</label>
+          <input class="input" type="time" id="taskStartTime">
+        </div>
+        <div class="field">
+          <label for="taskMinutes">Tahmini süre (dk)</label>
+          <input class="input" type="number" id="taskMinutes" min="0" max="1440" step="5" inputmode="numeric" aria-describedby="taskMinutesError">
+          <p class="field__error" id="taskMinutesError" hidden></p>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="taskStatus">Durum</label>
+          <select class="input" id="taskStatus">
+            <option value="todo">Yapılacak</option>
+            <option value="doing">Devam ediyor</option>
+            <option value="done">Tamamlandı</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="taskRecurrence">Tekrar</label>
+          <select class="input" id="taskRecurrence">
+            <option value="none">Tekrarlanmaz</option>
+            <option value="daily">Her gün</option>
+            <option value="weekdays">Hafta içi her gün</option>
+            <option value="weekly">Her hafta</option>
+            <option value="monthly">Her ay</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="taskTags">Etiketler</label>
+        <input class="input" type="text" id="taskTags" placeholder="virgülle ayır: javascript, ödev" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="subtaskInput">Alt görevler</label>
+        <!-- Satırları components.js içindeki createItemEditor çizer -->
+        <ul class="item-editor" id="subtaskList" hidden></ul>
+        <div class="inline-add">
+          <input class="input" type="text" id="subtaskInput" placeholder="Alt görev yaz, Enter'a bas" maxlength="200" autocomplete="off">
+          <button class="btn btn--ghost" id="subtaskAddBtn" type="button">Ekle</button>
+        </div>
+        <select class="input" id="subtaskTemplate" aria-label="Şablondan alt görev ekle"></select>
+      </div>
+
+      <footer class="modal__foot">
+        <button class="btn btn--ghost" id="taskCancelBtn" type="button">Vazgeç</button>
+        <button class="btn btn--primary" id="taskSaveBtn" type="submit">Ekle</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- KATEGORİ FORMU -->
+  <dialog class="modal modal--sm" id="categoryDialog" aria-labelledby="categoryDialogTitle">
+    <form class="modal__body" id="categoryForm" novalidate>
+      <h2 class="modal__title" id="categoryDialogTitle">Yeni kategori</h2>
+      <div class="field">
+        <label for="categoryName">Ad</label>
+        <input class="input" type="text" id="categoryName" maxlength="40" autocomplete="off" aria-describedby="categoryNameError">
+        <p class="field__error" id="categoryNameError" hidden></p>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="categoryColor">Renk</label>
+          <input class="input input--color" type="color" id="categoryColor" value="#2563eb">
+        </div>
+        <div class="field">
+          <span class="field__label" id="categoryIconLabel">Simge (isteğe bağlı)</span>
+          <!-- Tıklanınca aşağıdaki simge paneli açılır / kapanır -->
+          <button class="input emoji-toggle" id="categoryIconBtn" type="button" aria-labelledby="categoryIconLabel categoryIconBtn" aria-expanded="false" aria-controls="emojiPanel">Simge seç</button>
+        </div>
+      </div>
+      <!-- Simge düğmelerini categories.js üretir -->
+      <div class="emoji-panel" id="emojiPanel" role="group" aria-label="Simge seç" hidden></div>
+      <footer class="modal__foot">
+        <button class="btn btn--ghost" id="categoryCancelBtn" type="button">Vazgeç</button>
+        <button class="btn btn--primary" id="categorySaveBtn" type="submit">Ekle</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- KATEGORİ SİLME: içindeki görevler nereye taşınsın? -->
+  <dialog class="modal modal--sm" id="categoryDeleteDialog" aria-labelledby="categoryDeleteTitle">
+    <div class="modal__body">
+      <h2 class="modal__title" id="categoryDeleteTitle">Kategori silinsin mi?</h2>
+      <p class="page-sub" id="categoryDeleteText"></p>
+      <div class="field">
+        <label for="categoryMoveTarget">Görevleri taşı</label>
+        <select class="input" id="categoryMoveTarget"></select>
+      </div>
+      <footer class="modal__foot">
+        <button class="btn btn--ghost" id="categoryDeleteCancel" type="button">Vazgeç</button>
+        <button class="btn btn--danger" id="categoryDeleteOk" type="button">Kategoriyi sil</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <!-- ŞABLON FORMU -->
+  <dialog class="modal" id="templateDialog" aria-labelledby="templateDialogTitle">
+    <form class="modal__body" id="templateForm" novalidate>
+      <h2 class="modal__title" id="templateDialogTitle">Yeni şablon</h2>
+      <div class="field">
+        <label for="templateName">Ad</label>
+        <input class="input" type="text" id="templateName" maxlength="40" autocomplete="off" aria-describedby="templateNameError">
+        <p class="field__error" id="templateNameError" hidden></p>
+      </div>
+      <div class="field">
+        <label for="templateDescription">Açıklama</label>
+        <input class="input" type="text" id="templateDescription" maxlength="200" autocomplete="off">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="templateCategory">Kategori</label>
+          <select class="input" id="templateCategory"></select>
+        </div>
+        <div class="field">
+          <label for="templateTags">Etiketler</label>
+          <input class="input" type="text" id="templateTags" placeholder="virgülle ayır" autocomplete="off">
+        </div>
+      </div>
+      <div class="field">
+        <label for="templateItemInput">Maddeler</label>
+        <ul class="item-editor" id="templateItemList" hidden></ul>
+        <div class="inline-add">
+          <input class="input" type="text" id="templateItemInput" placeholder="Madde yaz, Enter'a bas" maxlength="200" autocomplete="off" aria-describedby="templateItemsError">
+          <button class="btn btn--ghost" id="templateItemAddBtn" type="button">Ekle</button>
+        </div>
+        <p class="field__error" id="templateItemsError" hidden></p>
+      </div>
+      <footer class="modal__foot">
+        <button class="btn btn--ghost" id="templateCancelBtn" type="button">Vazgeç</button>
+        <button class="btn btn--primary" id="templateSaveBtn" type="submit">Ekle</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- ŞABLONU KULLAN: şablondan yeni bir liste oluştur -->
+  <dialog class="modal modal--sm" id="useTemplateDialog" aria-labelledby="useTemplateTitle">
+    <form class="modal__body" id="useTemplateForm" novalidate>
+      <h2 class="modal__title" id="useTemplateTitle">Şablondan liste oluştur</h2>
+      <div class="field">
+        <label for="useTemplateName">Liste adı</label>
+        <input class="input" type="text" id="useTemplateName" maxlength="40" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="useTemplateDate">Tarih</label>
+        <input class="input" type="date" id="useTemplateDate">
+      </div>
+      <footer class="modal__foot">
+        <button class="btn btn--ghost" id="useTemplateCancel" type="button">Vazgeç</button>
+        <button class="btn btn--primary" type="submit">Oluştur</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- HEDEF FORMU -->
+  <dialog class="modal" id="goalDialog" aria-labelledby="goalDialogTitle">
+    <form class="modal__body" id="goalForm" novalidate>
+      <h2 class="modal__title" id="goalDialogTitle">Yeni hedef</h2>
+      <div class="field">
+        <label for="goalTitle">Hedef</label>
+        <input class="input" type="text" id="goalTitle" maxlength="120" autocomplete="off" aria-describedby="goalTitleError">
+        <p class="field__error" id="goalTitleError" hidden></p>
+      </div>
+      <div class="field">
+        <label for="goalDescription">Açıklama</label>
+        <input class="input" type="text" id="goalDescription" maxlength="300" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="goalType">Tür</label>
+        <select class="input" id="goalType">
+          <option value="numeric">Sayısal (ör. 20 bölüm, 300 sayfa)</option>
+          <option value="simple">Tek adım (yapıldı / yapılmadı)</option>
+        </select>
+      </div>
+      <div class="field" id="goalNumericFields">
+        <div class="field-row">
+          <div class="field">
+            <label for="goalTarget">Hedef değer</label>
+            <input class="input" type="number" id="goalTarget" min="0" step="any" inputmode="decimal" aria-describedby="goalTargetError">
+          </div>
+          <div class="field">
+            <label for="goalCurrent">Şu anki değer</label>
+            <input class="input" type="number" id="goalCurrent" min="0" step="any" inputmode="decimal" aria-describedby="goalTargetError">
+          </div>
+          <div class="field">
+            <label for="goalUnit">Birim</label>
+            <input class="input" type="text" id="goalUnit" maxlength="20" placeholder="sayfa, dk, kez" autocomplete="off">
+          </div>
+        </div>
+        <p class="field__error" id="goalTargetError" hidden></p>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="goalStart">Başlangıç</label>
+          <input class="input" type="date" id="goalStart">
+        </div>
+        <div class="field">
+          <label for="goalEnd">Bitiş</label>
+          <input class="input" type="date" id="goalEnd" aria-describedby="goalEndError">
+          <p class="field__error" id="goalEndError" hidden></p>
+        </div>
+        <div class="field">
+          <label for="goalCategory">Kategori</label>
+          <select class="input" id="goalCategory"></select>
+        </div>
+      </div>
+      <footer class="modal__foot">
+        <button class="btn btn--ghost" id="goalCancelBtn" type="button">Vazgeç</button>
+        <button class="btn btn--primary" id="goalSaveBtn" type="submit">Ekle</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- ALIŞKANLIK FORMU -->
+  <dialog class="modal modal--sm" id="habitDialog" aria-labelledby="habitDialogTitle">
+    <form class="modal__body" id="habitForm" novalidate>
+      <h2 class="modal__title" id="habitDialogTitle">Yeni alışkanlık</h2>
+      <div class="field">
+        <label for="habitTitle">Alışkanlık</label>
+        <input class="input" type="text" id="habitTitle" maxlength="80" autocomplete="off" aria-describedby="habitTitleError">
+        <p class="field__error" id="habitTitleError" hidden></p>
+      </div>
+      <div class="field">
+        <label for="habitFrequency">Sıklık</label>
+        <select class="input" id="habitFrequency">
+          <option value="daily">Her gün</option>
+          <option value="weekly">Haftada belirli sayıda gün</option>
+        </select>
+      </div>
+      <div class="field" id="habitWeeklyField">
+        <label for="habitWeekly">Haftada kaç gün?</label>
+        <input class="input" type="number" id="habitWeekly" min="1" max="7" inputmode="numeric" aria-describedby="habitWeeklyError">
+        <p class="field__error" id="habitWeeklyError" hidden></p>
+      </div>
+      <div class="field">
+        <label for="habitCategory">Kategori</label>
+        <select class="input" id="habitCategory"></select>
+      </div>
+      <footer class="modal__foot">
+        <button class="btn btn--ghost" id="habitCancelBtn" type="button">Vazgeç</button>
+        <button class="btn btn--primary" id="habitSaveBtn" type="submit">Ekle</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- NOT FORMU -->
+  <dialog class="modal" id="noteDialog" aria-labelledby="noteDialogTitle">
+    <form class="modal__body" id="noteForm" novalidate>
+      <h2 class="modal__title" id="noteDialogTitle">Yeni not</h2>
+      <div class="field">
+        <label for="noteTitle">Başlık</label>
+        <input class="input" type="text" id="noteTitle" maxlength="120" autocomplete="off" aria-describedby="noteTitleError">
+        <p class="field__error" id="noteTitleError" hidden></p>
+      </div>
+      <div class="field">
+        <label for="noteContent">İçerik</label>
+        <textarea class="input input--area input--tall" id="noteContent" maxlength="5000"></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="noteCategory">Kategori</label>
+          <select class="input" id="noteCategory"></select>
+        </div>
+        <div class="field">
+          <label for="noteTask">İlişkili görev</label>
+          <select class="input" id="noteTask"></select>
+        </div>
+      </div>
+      <footer class="modal__foot modal__foot--split">
+        <button class="btn btn--ghost btn--danger-text" id="noteDeleteBtn" type="button">Notu sil</button>
+        <span class="modal__foot-group">
+          <button class="btn btn--ghost" id="noteCancelBtn" type="button">Vazgeç</button>
+          <button class="btn btn--primary" id="noteSaveBtn" type="submit">Ekle</button>
+        </span>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- SEYAHAT FORMU -->
+  <dialog class="modal" id="tripDialog" aria-labelledby="tripDialogTitle">
+    <form class="modal__body" id="tripForm" novalidate>
+      <h2 class="modal__title" id="tripDialogTitle">Yeni seyahat</h2>
+      <div class="field-row">
+        <div class="field">
+          <label for="tripName">Seyahat adı</label>
+          <input class="input" type="text" id="tripName" maxlength="60" autocomplete="off" aria-describedby="tripNameError">
+          <p class="field__error" id="tripNameError" hidden></p>
+        </div>
+        <div class="field">
+          <label for="tripDestination">Gidilecek yer</label>
+          <input class="input" type="text" id="tripDestination" maxlength="80" autocomplete="off">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="tripStart">Gidiş</label>
+          <input class="input" type="date" id="tripStart">
+        </div>
+        <div class="field">
+          <label for="tripEnd">Dönüş</label>
+          <input class="input" type="date" id="tripEnd" aria-describedby="tripEndError">
+          <p class="field__error" id="tripEndError" hidden></p>
+        </div>
+        <div class="field">
+          <label for="tripBudget">Bütçe (₺)</label>
+          <input class="input" type="number" id="tripBudget" min="0" step="any" inputmode="decimal" aria-describedby="tripBudgetError">
+          <p class="field__error" id="tripBudgetError" hidden></p>
+        </div>
+      </div>
+      <div class="field">
+        <label for="tripNotes">Notlar</label>
+        <textarea class="input input--area" id="tripNotes" maxlength="1000"></textarea>
+      </div>
+      <footer class="modal__foot">
+        <button class="btn btn--ghost" id="tripCancelBtn" type="button">Vazgeç</button>
+        <button class="btn btn--primary" id="tripSaveBtn" type="submit">Ekle</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- ORTAK GÖREV FORMU -->
+  <dialog class="modal modal--sm" id="sharedTaskDialog" aria-labelledby="sharedTaskDialogTitle">
+    <form class="modal__body" id="sharedTaskForm" novalidate>
+      <h2 class="modal__title" id="sharedTaskDialogTitle">Ortak görevi düzenle</h2>
+      <div class="field">
+        <label for="sharedTaskTitle">Başlık</label>
+        <input class="input" type="text" id="sharedTaskTitle" maxlength="120" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="sharedTaskDescription">Açıklama</label>
+        <textarea class="input input--area" id="sharedTaskDescription" maxlength="1000"></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="sharedTaskDue">Tarih</label>
+          <input class="input" type="date" id="sharedTaskDue">
+        </div>
+        <div class="field">
+          <label for="sharedTaskAssignee">Sorumlu</label>
+          <select class="input" id="sharedTaskAssignee"></select>
+        </div>
+      </div>
+      <footer class="modal__foot modal__foot--split">
+        <button class="btn btn--ghost btn--danger-text" id="sharedTaskDelete" type="button">Görevi sil</button>
+        <span class="modal__foot-group">
+          <button class="btn btn--ghost" id="sharedTaskCancel" type="button">Vazgeç</button>
+          <button class="btn btn--primary" type="submit">Kaydet</button>
+        </span>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- İLK AÇILIŞ KARŞILAMASI -->
+  <dialog class="modal modal--sm" id="welcomeDialog" aria-labelledby="welcomeTitle">
+    <form class="modal__body" id="welcomeForm" novalidate>
+      <img class="welcome__logo" src="assets/icon-192.png" alt="" width="64" height="64">
+      <h2 class="modal__title" id="welcomeTitle">Planstrator'a hoş geldin</h2>
+      <p class="page-sub">Görevlerin, zamanın ve hedeflerin tek yerde. Verilerin yalnızca bu cihazda saklanır; başka kimse göremez.</p>
+      <div class="field">
+        <label for="welcomeName">Sana nasıl hitap edelim? (isteğe bağlı)</label>
+        <input class="input" type="text" id="welcomeName" maxlength="40" autocomplete="given-name" placeholder="Adın">
+      </div>
+      <footer class="modal__foot">
+        <button class="btn btn--ghost" id="welcomeSkip" type="button">Geç</button>
+        <button class="btn btn--primary" type="submit">Başla</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- HESAP VE BULUT YEDEĞİ: hangi bölümün görüneceğine account.js karar verir -->
+  <dialog class="modal" id="accountDialog" aria-labelledby="accountDialogTitle">
+    <div class="modal__body">
+      <header class="modal__head">
+        <h2 class="modal__title" id="accountDialogTitle">Hesap ve bulut yedeği</h2>
+        <button class="icon-btn icon-btn--sm" id="accountDialogClose" type="button" aria-label="Kapat">
+          <svg class="icon"><use href="#i-close"></use></svg>
+        </button>
+      </header>
+      <div id="accountOffline">
+        <p class="page-sub" id="accountOfflineText">Hesap özellikleri (bulut yedeği ve arkadaşlarla ortak panolar) için Planstrator sunucusu gerekir. Proje klasöründe <code>npm start</code> çalıştırıp uygulamayı <code>http://localhost:5500</code> adresinden aç. Sunucu olmadan da uygulamanın geri kalanı tam çalışır.</p>
+      </div>
+      <div id="accountGuest" hidden>
+        <p class="page-sub">Hesap açarsan verilerini buluta yedekleyebilir, başka cihazda geri yükleyebilir ve arkadaşlarınla ortak pano kullanabilirsin.</p>
+        <div class="segmented account-modes" id="accountModes" role="group" aria-label="Giriş ya da kayıt">
+          <button class="segmented__btn" type="button" data-form-mode="login">Giriş yap</button>
+          <button class="segmented__btn" type="button" data-form-mode="register">Hesap oluştur</button>
+        </div>
+        <form class="settings-form account-form" id="accountForm" novalidate>
+          <div class="field" id="accountNameField" hidden>
+            <label for="accountName">Adın</label>
+            <input class="input" type="text" id="accountName" maxlength="60" autocomplete="name">
+          </div>
+          <div class="field">
+            <label for="accountEmail">E-posta</label>
+            <input class="input" type="email" id="accountEmail" maxlength="254" autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="accountPassword">Parola (en az 8 karakter)</label>
+            <input class="input" type="password" id="accountPassword" maxlength="200" autocomplete="current-password" aria-describedby="accountError">
+          </div>
+          <p class="field__error" id="accountError" role="alert" hidden></p>
+          <button class="btn btn--primary" id="accountSubmit" type="submit">Giriş yap</button>
+        </form>
+      </div>
+      <div id="accountUser" hidden>
+        <p class="row__title" id="accountWho"></p>
+        <div class="verify-box" id="accountVerify" role="status" hidden>
+          <p id="accountVerifyText"></p>
+          <button class="btn btn--ghost btn--sm" id="resendVerifyBtn" type="button">Maili yeniden gönder</button>
+        </div>
+        <p class="page-sub" id="backupInfo"></p>
+        <div class="settings-card__actions">
+          <button class="btn btn--primary" id="backupBtn" type="button">Buluta yedekle</button>
+          <button class="btn btn--ghost" id="restoreBtn" type="button">Buluttan geri yükle</button>
+          <a class="btn btn--ghost" href="#boards">Ortak panolar</a>
+          <button class="btn btn--ghost" id="logoutBtn" type="button">Çıkış yap</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ONAY PENCERESİ (silme gibi geri alınamayan işlemler için) -->
+  <dialog class="modal modal--sm" id="confirmDialog" aria-labelledby="confirmTitle">
+    <div class="modal__body">
+      <h2 class="modal__title" id="confirmTitle"></h2>
+      <p class="page-sub" id="confirmText"></p>
+      <footer class="modal__foot">
+        <button class="btn btn--ghost" id="confirmCancel" type="button">Vazgeç</button>
+        <button class="btn btn--danger" id="confirmOk" type="button">Sil</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <!-- Uygulama içi bildirim (toast) -->
+  <div class="toast" id="toast" role="status" aria-live="polite" popover="manual" hidden></div>
+
+  <!-- type="module": import / export kullanabilmemizi sağlar -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

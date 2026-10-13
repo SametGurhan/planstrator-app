@@ -1,0 +1,356 @@
+/* ==========================================================
+   styles.css — Tasarım değişkenleri, temel stiller ve sayfa düzeni
+   (Kart, buton gibi parçalar components.css içinde)
+   ========================================================== */
+
+/* ---------- 1. Tasarım değişkenleri (açık tema) ---------- */
+:root {
+  --bg: #eef0fb;
+  --surface: #ffffff;
+  --surface-2: rgba(100, 105, 150, 0.1);
+  --text: #1b1e2b;
+  --muted: #5d6479;
+  --border: #e0e3f0;
+  --on-accent: #ffffff;
+
+  /* Ana renkler (--accent, --accent-2, --accent-3, --grad) themes.css'ten gelir.
+     Aşağıdaki tonlar onlardan türetilir; tema değişince kendiliğinden güncellenir.
+     color-mix(A %x, B): A ve B renklerini karıştırır. */
+  --accent-soft: color-mix(in srgb, var(--accent) 13%, var(--surface));
+  --glow: color-mix(in srgb, var(--accent) 50%, transparent);
+  --blob-1: color-mix(in srgb, var(--accent) 26%, transparent);
+  --blob-2: color-mix(in srgb, var(--accent-2) 22%, transparent);
+  --blob-3: color-mix(in srgb, var(--accent-3) 16%, transparent);
+
+  /* "Aurora cam" yüzeyleri (effects.css kullanır) */
+  --glass: rgba(255, 255, 255, 0.72);
+  --glass-solid: rgba(255, 255, 255, 0.93);
+  --glass-border: rgba(255, 255, 255, 0.85);
+
+  --ok: #1f9d6b;
+  --warn: #c97a09;
+  --danger: #d6404a;
+  --danger-soft: #fdecee;
+
+  /* Öncelik renkleri */
+  --p-low: #7a8296;
+  --p-normal: #3b82f6;
+  --p-high: #e08a0b;
+  --p-urgent: #e0424c;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 1px 2px rgba(20, 24, 45, 0.04), 0 6px 20px rgba(20, 24, 45, 0.05);
+
+  --sidebar-w: 248px;
+  --topbar-h: 64px;
+
+  --font: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ---------- 2. Koyu tema: yalnızca değişkenleri değiştiriyoruz ---------- */
+[data-theme="dark"] {
+  --bg: #090a13;
+  --surface: #171a26;
+  --surface-2: rgba(150, 160, 220, 0.11);
+  --text: #e9ebf3;
+  --muted: #a0a7bd;
+  --border: #2a2e40;
+  --on-accent: #0e1016;
+
+  --accent-soft: color-mix(in srgb, var(--accent) 20%, var(--surface));
+  --glow: color-mix(in srgb, var(--accent) 55%, transparent);
+  --blob-1: color-mix(in srgb, var(--accent) 30%, transparent);
+  --blob-2: color-mix(in srgb, var(--accent-2) 20%, transparent);
+  --blob-3: color-mix(in srgb, var(--accent-3) 18%, transparent);
+
+  --glass: rgba(20, 22, 36, 0.62);
+  --glass-solid: rgba(20, 22, 36, 0.94);
+  --glass-border: rgba(255, 255, 255, 0.09);
+
+  --ok: #3fc48f;
+  --warn: #f0a93a;
+  --danger: #ff6b74;
+  --danger-soft: #3a1d22;
+
+  --p-low: #8d95a9;
+  --p-normal: #62a0ff;
+  --p-high: #f0a93a;
+  --p-urgent: #ff6b74;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* ---------- 3. Temel ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { color-scheme: light; }
+html[data-theme="dark"] { color-scheme: dark; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, p, ul { margin: 0; }
+ul { padding: 0; list-style: none; }
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/* [hidden] özelliği her zaman gizlesin (display veren sınıflar bunu ezmesin) */
+[hidden] { display: none !important; }
+
+/* Klavye ile gezerken odak çerçevesi */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.skip-link {
+  position: absolute;
+  left: 12px; top: -60px;
+  z-index: 100;
+  padding: 8px 14px;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-radius: var(--radius-sm);
+}
+.skip-link:focus { top: 12px; }
+
+.sprite { position: absolute; width: 0; height: 0; }
+
+.icon {
+  width: 20px; height: 20px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- 4. Ana düzen: menü + içerik ---------- */
+.app {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  min-height: 100vh;
+  transition: grid-template-columns 0.2s ease;
+}
+.app.is-collapsed { --sidebar-w: 76px; }
+
+.main-col { min-width: 0; display: flex; flex-direction: column; }
+
+/* ---------- 5. Sol menü ---------- */
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 14px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.brand { display: flex; align-items: center; gap: 12px; padding: 4px 8px 14px; }
+.brand__logo {
+  display: grid; place-items: center;
+  width: 34px; height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+.brand__name { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
+
+.nav { flex: 1; }
+.nav__title {
+  padding: 14px 10px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.nav__list { display: grid; gap: 2px; }
+.nav__link, .sidebar__collapse {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.nav__link:hover, .sidebar__collapse:hover { background: var(--surface-2); color: var(--text); }
+.nav__link.is-active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+.sidebar__collapse .icon { transition: transform 0.2s ease; }
+
+/* Daraltılmış menü: yazıları gizle, ikonları ortala */
+.app.is-collapsed .nav__label,
+.app.is-collapsed .brand__name { display: none; }
+.app.is-collapsed .nav__title { visibility: hidden; height: 14px; padding: 0; }
+.app.is-collapsed .nav__link,
+.app.is-collapsed .sidebar__collapse,
+.app.is-collapsed .brand { justify-content: center; padding-inline: 0; }
+.app.is-collapsed .sidebar__collapse .icon { transform: rotate(180deg); }
+
+/* Logonun yanındaki daraltma düğmesi: sağa yaslanır */
+.brand__collapse { margin-left: auto; }
+.brand__collapse .icon { transition: transform 0.2s ease; }
+/* Daraltılmış menüde yan yana sığmaz: logo üstte, düğme altında */
+.app.is-collapsed .brand { flex-direction: column; gap: 8px; }
+.app.is-collapsed .brand__collapse { margin-left: 0; }
+.app.is-collapsed .brand__collapse .icon { transform: rotate(180deg); }
+
+.backdrop {
+  position: fixed; inset: 0;
+  z-index: 20;
+  background: rgba(10, 12, 20, 0.5);
+}
+
+/* ---------- 6. Üst çubuk ---------- */
+.topbar {
+  position: sticky; top: 0;
+  z-index: 10;
+  display: flex; align-items: center; gap: 12px;
+  height: var(--topbar-h);
+  padding: 0 28px;
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+/* .topbar ile birlikte yazıyoruz ki components.css'teki .icon-btn { display: grid } bunu ezmesin */
+.topbar .topbar__menu { display: none; }
+.topbar__date { display: flex; flex-direction: column; line-height: 1.25; margin-right: auto; min-width: 0; }
+.topbar__weekday { font-weight: 600; text-transform: capitalize; }
+.topbar__full { font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+.search {
+  display: flex; align-items: center; gap: 8px;
+  width: min(320px, 100%);
+  min-width: 0; /* dar ekranda küçülebilsin; yoksa yanındaki düğmeleri ekran dışına iter */
+  padding: 0 12px;
+  height: 40px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+}
+.search:focus-within { border-color: var(--accent); }
+.search input {
+  flex: 1; min-width: 0;
+  width: 100%; /* kutunun kendi varsayılan genişliği arama alanını zorla genişletmesin */
+  border: 0; outline: 0;
+  background: none;
+  color: var(--text);
+}
+
+.avatar {
+  display: grid; place-items: center;
+  width: 38px; height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+.avatar:hover { filter: brightness(1.08); }
+
+/* ---------- 7. İçerik alanı ---------- */
+.content { padding: 28px; width: 100%; max-width: 1320px; margin: 0 auto; outline: 0; }
+
+.page-head {
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
+  gap: 16px 24px;
+  margin-bottom: 22px;
+}
+.page-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.page-sub { margin-top: 4px; color: var(--muted); }
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.dash-col { display: grid; gap: 16px; min-width: 0; }
+
+/* ---------- 8. Responsive ---------- */
+
+/* Tablet: dashboard tek sütun */
+@media (max-width: 1080px) {
+  .dash-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Mobil: menü ekranın dışında bekler, butonla kayarak açılır */
+@media (max-width: 860px) {
+  .app, .app.is-collapsed { grid-template-columns: minmax(0, 1fr); --sidebar-w: 264px; }
+
+  .sidebar {
+    position: fixed; left: 0; top: 0;
+    z-index: 30;
+    width: var(--sidebar-w);
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+  }
+  .app.is-drawer-open .sidebar { transform: translateX(0); box-shadow: var(--shadow); }
+
+  /* Mobilde "daralt" modu yok: yazılar her zaman görünsün */
+  .app.is-collapsed .nav__label,
+  .app.is-collapsed .brand__name { display: inline; }
+  .app.is-collapsed .nav__title { visibility: visible; height: auto; padding: 14px 10px 6px; }
+  .app.is-collapsed .nav__link,
+  .app.is-collapsed .brand { justify-content: flex-start; padding-inline: 10px; }
+  .sidebar__collapse, .brand__collapse { display: none; }
+  .app.is-collapsed .brand { flex-direction: row; }
+
+  .topbar { padding: 0 16px; }
+  .topbar .topbar__menu { display: grid; }
+  .topbar__full { display: none; }
+  .avatar { display: none; }
+  .content { padding: 18px 16px 32px; }
+  .page-title { font-size: 22px; }
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+}
+
+@media (max-width: 420px) {
+  .topbar__date { display: none; }
+  .search { width: auto; flex: 1; }
+}
+
+/* Hareket hassasiyeti olan kullanıcılar için animasyonları kapat */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

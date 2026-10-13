@@ -1,0 +1,8 @@
+{
+  "appId": "com.planstrator.app",
+  "appName": "Planstrator",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#090a13"
+  }
+}
