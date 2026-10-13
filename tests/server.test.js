@@ -259,3 +259,54 @@ test("sunucu klasörü ve veritabanı dışarıdan indirilemez", async () => {
   assert.equal((await fetch(`${baseUrl}/package.json`)).status, 404);
   assert.equal((await fetch(`${baseUrl}/js/app.js`)).status, 200);
 });
+
+test("hesap silme: parola ister, hesabı ve ona bağlı her şeyi siler", async () => {
+  const zeynep = createClient();
+  const komsu = createClient();
+  const register = (client, email, name) =>
+    client("POST", "/api/auth/register", { email: email, name: name, password: "silinecek-parola-1" });
+
+  const zeynepId = (await register(zeynep, "zeynep@example.com", "Zeynep")).body.user.id;
+  await register(komsu, "komsu@example.com", "Komşu");
+
+  // Zeynep'in bir yedeği, kendi panosu ve Komşu'nun panosunda bir görevi olsun.
+  await zeynep("PUT", "/api/sync", { data: { tasks: [{ id: "t1", title: "Yedekteki görev" }] }, whiteboard: null });
+  await zeynep("POST", "/api/boards", { name: "Zeynep'in panosu" });
+  const komsuBoard = (await komsu("POST", "/api/boards", { name: "Komşunun panosu" })).body;
+  const boardId = komsuBoard.board ? komsuBoard.board.id : komsuBoard.id;
+  const invite = await komsu("POST", `/api/boards/${boardId}/invites`, { email: "zeynep@example.com" });
+  assert.equal(invite.status, 201);
+  const invites = (await zeynep("GET", "/api/boards")).body.invites;
+  await zeynep("POST", `/api/invites/${invites[0].id}/accept`);
+  await zeynep("POST", `/api/boards/${boardId}/tasks`, { title: "Zeynep'in eklediği görev" });
+
+  // Giriş yapmadan ya da yanlış parolayla silinemez.
+  assert.equal((await yabanci("DELETE", "/api/auth/account", { password: "silinecek-parola-1" })).status, 401);
+  assert.equal((await zeynep("DELETE", "/api/auth/account", { password: "yanlis-parola" })).status, 403);
+  assert.equal((await zeynep("GET", "/api/auth/me")).body.user.email, "zeynep@example.com");
+
+  assert.equal((await zeynep("DELETE", "/api/auth/account", { password: "silinecek-parola-1" })).status, 200);
+
+  // Oturum kapandı ve aynı bilgilerle artık giriş yapılamıyor.
+  assert.equal((await zeynep("GET", "/api/auth/me")).body.user, null);
+  assert.equal((await zeynep("POST", "/api/auth/login", { email: "zeynep@example.com", password: "silinecek-parola-1" })).status, 401);
+
+  // Veritabanında hiçbir izi kalmadı.
+  const { query } = await import("../server/db.js");
+  for (const table of ["sessions", "tasks", "user_extras", "board_members"]) {
+    assert.equal((await query(`SELECT 1 FROM ${table} WHERE user_id = ?`, [zeynepId])).length, 0, table);
+  }
+  assert.equal((await query("SELECT 1 FROM boards WHERE owner_id = ?", [zeynepId])).length, 0);
+
+  // Komşu'nun panosu duruyor; Zeynep'in görevi kaldı ama artık ona bağlı değil.
+  const board = (await komsu("GET", `/api/boards/${boardId}`)).body;
+  assert.equal(board.tasks.length, 1);
+  assert.equal(board.members.some((member) => member.email === "zeynep@example.com"), false);
+  assert.equal((await query("SELECT created_by FROM board_tasks WHERE board_id = ?", [boardId]))[0].created_by, null);
+});
+
+test("gizlilik politikası sayfası giriş yapmadan açılır", async () => {
+  const response = await fetch(`${baseUrl}/privacy.html`);
+  assert.equal(response.status, 200);
+  assert.ok((await response.text()).includes("hesap-silme"));
+});

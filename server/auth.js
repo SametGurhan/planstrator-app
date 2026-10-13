@@ -247,6 +247,48 @@ authRouter.post("/resend-verification", requireAuth, async (request, response) =
   response.json({ ok: true });
 });
 
+// Hesabı ve ona bağlı her şeyi kalıcı olarak siler. Geri alınamadığı için parola yeniden istenir:
+// açık unutulmuş bir oturumu ele geçiren biri hesabı silemesin.
+authRouter.delete("/account", requireAuth, async (request, response) => {
+  const password = typeof request.body.password === "string" ? request.body.password : "";
+  checkAttempts(`${request.ip}|delete|${request.user.id}`);
+
+  const row = await queryOne("SELECT password_hash FROM users WHERE id = ?", [request.user.id]);
+  if (!row || !verifyPassword(password, row.password_hash)) throw new HttpError(403, "Parola hatalı.");
+
+  const userId = request.user.id;
+  const ownBoards = "SELECT id FROM boards WHERE owner_id = ?";
+  // Şemadaki ON DELETE CASCADE bunların çoğunu kendiliğinden siler; yine de tek tek yazıyoruz ki
+  // neyin silindiği açıkça görülsün ve veritabanı ayarına bağlı kalmasın.
+  // batch: ifadelerin ya hepsi uygulanır ya hiçbiri (yarım silinmiş hesap kalmaz).
+  await batch([
+    ["DELETE FROM sessions WHERE user_id = ?", [userId]],
+    ["DELETE FROM email_tokens WHERE user_id = ?", [userId]],
+    // Kişisel veriler (bulut yedeği)
+    ["DELETE FROM categories WHERE user_id = ?", [userId]],
+    ["DELETE FROM tasks WHERE user_id = ?", [userId]],
+    ["DELETE FROM pomodoro_sessions WHERE user_id = ?", [userId]],
+    ["DELETE FROM goals WHERE user_id = ?", [userId]],
+    ["DELETE FROM checklist_templates WHERE user_id = ?", [userId]],
+    ["DELETE FROM user_extras WHERE user_id = ?", [userId]],
+    // Sahibi olduğu ortak panolar, içindekilerle birlikte
+    [`DELETE FROM board_tasks WHERE board_id IN (${ownBoards})`, [userId]],
+    [`DELETE FROM board_invites WHERE board_id IN (${ownBoards})`, [userId]],
+    [`DELETE FROM board_members WHERE board_id IN (${ownBoards})`, [userId]],
+    ["DELETE FROM boards WHERE owner_id = ?", [userId]],
+    // Başkalarının panolarındaki izleri: üyelik ve davetler silinir,
+    // eklediği görevler panoda kalır ama artık ona bağlı değildir.
+    ["DELETE FROM board_members WHERE user_id = ?", [userId]],
+    ["DELETE FROM board_invites WHERE invited_by = ? OR email = ?", [userId, request.user.email]],
+    ["UPDATE board_tasks SET assignee_id = NULL WHERE assignee_id = ?", [userId]],
+    ["UPDATE board_tasks SET created_by = NULL WHERE created_by = ?", [userId]],
+    ["DELETE FROM users WHERE id = ?", [userId]],
+  ]);
+
+  response.setHeader("Set-Cookie", `${COOKIE_NAME}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`);
+  response.json({ ok: true });
+});
+
 // Süresi dolmuş oturumları temizler (sunucu açılırken bir kez çağrılır).
 export async function deleteExpiredSessions() {
   await run("DELETE FROM sessions WHERE expires_at < ?", [Date.now()]);

@@ -79,6 +79,12 @@ async function signOut() {
   }
 }
 
+async function deleteAccount(password) {
+  const result = await request("DELETE", "/auth/account", { password: password });
+  removePreference(TOKEN_KEY); // hesap artık yok; anahtarın da anlamı kalmadı
+  return result;
+}
+
 // Sunucudaki her adres için bir fonksiyon.
 export const api = {
   // Hesap
@@ -87,6 +93,7 @@ export const api = {
   login: (input) => signIn("/auth/login", input),
   logout: signOut,
   resendVerification: () => request("POST", "/auth/resend-verification"),
+  deleteAccount: deleteAccount,
 
   // Bulut yedeği
   loadBackup: () => request("GET", "/sync"),

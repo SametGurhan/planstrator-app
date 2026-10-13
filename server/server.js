@@ -95,7 +95,7 @@ export function createApp() {
   app.use("/css", express.static(path.join(projectRoot, "css")));
   app.use("/js", express.static(path.join(projectRoot, "js")));
   app.use("/assets", express.static(path.join(projectRoot, "assets")));
-  for (const file of ["index.html", "sw.js", "manifest.webmanifest"]) {
+  for (const file of ["index.html", "privacy.html", "sw.js", "manifest.webmanifest"]) {
     app.get(`/${file}`, (request, response) => response.sendFile(path.join(projectRoot, file)));
   }
   app.get("/", (request, response) => response.sendFile(path.join(projectRoot, "index.html")));

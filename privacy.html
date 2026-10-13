@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Planstrator gizlilik politikası ve hesap silme adımları.">
+  <meta name="theme-color" content="#091729">
+  <title>Gizlilik Politikası · Planstrator</title>
+  <link rel="icon" href="assets/icon-192.png">
+  <!-- Bu sayfa uygulamadan bağımsızdır: mağaza ve arama motorları giriş yapmadan okuyabilmelidir. -->
+  <style>
+    :root {
+      --bg: #eef2fb; --surface: #ffffff; --text: #1b1e2b; --muted: #5d6479;
+      --border: #dfe4f2; --accent: #2563eb; --brand: #091729;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #090d18; --surface: #141a2a; --text: #e9ebf3; --muted: #a0a7bd;
+        --border: #27304a; --accent: #7aa7ff;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 16px; line-height: 1.65;
+    }
+    .top { background: var(--brand); color: #fff; }
+    .top__inner, main { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+    .top__inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 60px; }
+    .brand { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 700; text-decoration: none; }
+    .brand img { width: 32px; height: 32px; border-radius: 8px; }
+    .top a.back { color: #9ff0cf; font-size: 14px; }
+    main { padding-top: 28px; padding-bottom: 56px; }
+    h1 { margin: 0 0 4px; font-size: 1.7rem; line-height: 1.25; }
+    h2 { margin: 36px 0 8px; font-size: 1.15rem; }
+    p, ul, ol { margin: 0 0 12px; }
+    ul, ol { padding-left: 22px; }
+    li { margin-bottom: 6px; }
+    a { color: var(--accent); }
+    .updated { color: var(--muted); font-size: 14px; }
+    .summary, .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px 18px; margin: 20px 0;
+    }
+    .summary p:last-child, .card :last-child { margin-bottom: 0; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 15px; }
+    th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="top__inner">
+      <a class="brand" href="./"><img src="assets/icon-192.png" alt="">Planstrator</a>
+      <a class="back" href="./">Uygulamaya dön</a>
+    </div>
+  </header>
+
+  <main>
+    <h1>Gizlilik Politikası</h1>
+    <p class="updated">Son güncelleme: 13 Ekim 2026</p>
+
+    <div class="summary">
+      <p><strong>Kısaca:</strong> Planstrator hesap açmadan kullanılabilir ve o durumda hiçbir verin cihazından çıkmaz. Hesap açarsan yalnızca adını, e-posta adresini ve senin yedeklediğin ya da ortak panolara yazdığın içeriği saklarız. Reklam göstermeyiz, seni izlemeyiz, verilerini satmayız. Hesabını istediğin an silebilirsin.</p>
+    </div>
+
+    <h2>1. Bu politika neyi kapsar?</h2>
+    <p>Bu metin, Planstrator web uygulamasını (<a href="https://planstrator-app.vercel.app">planstrator-app.vercel.app</a>) ve aynı uygulamanın telefona kurulan sürümünü kapsar. Planstrator bireysel bir geliştirici tarafından hazırlanan, ücretsiz bir planlama uygulamasıdır.</p>
+
+    <h2>2. Cihazında kalan veriler</h2>
+    <p>Görevlerin, notların, hedeflerin, alışkanlıkların, seyahat planların, Pomodoro kayıtların, çizimlerin ve ayarların tarayıcının ya da uygulamanın yerel depolama alanında (localStorage) durur. Sen buluta yedekle demediğin sürece bu veriler sunucumuza gönderilmez; biz göremeyiz.</p>
+    <p>Bu verileri Ayarlar sayfasından dışa aktarabilir ya da silebilirsin. Tarayıcı verilerini temizlersen veya uygulamayı kaldırırsan onlar da silinir.</p>
+
+    <h2>3. Hesap açarsan topladığımız veriler</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Veri</th><th>Neden</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Ad ve e-posta adresi</td><td>Hesabını tanımak, doğrulama ve davet maillerini göndermek, ortak panolarda seni diğer üyelere göstermek</td></tr>
+          <tr><td>Parola</td><td>Giriş yapabilmen için. Parolanın kendisi saklanmaz; yalnızca geri çevrilemeyen bir özeti (scrypt) tutulur</td></tr>
+          <tr><td>Bulut yedeği</td><td>"Buluta yedekle" düğmesine bastığında, 2. maddedeki verilerinin bir kopyası başka cihazda geri yükleyebilmen için saklanır</td></tr>
+          <tr><td>Ortak pano içeriği</td><td>Pano adları, görevler, üyeler ve davet edilen e-posta adresleri; panonun üyeleri görebilsin diye</td></tr>
+          <tr><td>Oturum bilgisi</td><td>Giriş yapmış kalman için tarayıcında bir oturum çerezi (telefon uygulamasında bir oturum anahtarı) durur. 30 gün geçerlidir; sunucuda yalnızca özeti saklanır</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Parola tahmin saldırılarını yavaşlatmak için giriş denemelerinde IP adresin kısa süreliğine sunucunun belleğinde sayılır; veritabanına yazılmaz.</p>
+    <p>Reklam kimliği, konum, rehber, kamera ya da mikrofon verisi toplamayız. Analiz ya da izleme aracı kullanmayız.</p>
+
+    <h2>4. Çerezler</h2>
+    <p>Yalnızca giriş yaptığında oluşan tek bir oturum çerezi kullanılır. Bu çerez uygulamanın çalışması için zorunludur; reklam ya da izleme amacı taşımaz.</p>
+
+    <h2>5. Verilerin nerede durur, kimler işler?</h2>
+    <p>Verilerini kimseyle satış ya da reklam amacıyla paylaşmayız. Uygulamayı çalıştırabilmek için şu hizmet sağlayıcıları kullanırız:</p>
+    <ul>
+      <li><strong>Turso</strong>: veritabanı. Hesap, yedek ve pano verileri Avrupa Birliği'ndeki (İrlanda) sunucularda saklanır.</li>
+      <li><strong>Vercel</strong>: uygulamanın barındırılması. İstekleri iletirken IP adresi gibi teknik erişim kayıtlarını kendi politikası kapsamında tutabilir.</li>
+      <li><strong>Google (Gmail)</strong>: doğrulama ve davet maillerinin gönderilmesi. Bu amaçla adın ve e-posta adresin mail içeriğiyle birlikte Google'a iletilir.</li>
+    </ul>
+    <p>Bu sağlayıcıların sunucuları Türkiye dışında bulunur. Yasal bir zorunluluk olmadıkça verilerin başka kimseye verilmez.</p>
+
+    <h2>6. Güvenlik</h2>
+    <p>Bağlantılar HTTPS ile şifrelenir. Parolalar özetlenerek saklanır, oturum çerezi sayfadaki betiklerin okuyamayacağı şekilde ayarlanır. Yine de hiçbir sistem tümüyle güvenli değildir; başka yerde kullandığın bir parolayı burada kullanmamanı öneririz.</p>
+
+    <h2>7. Verilerini ne kadar süre saklarız?</h2>
+    <p>Hesabın açık kaldığı sürece. Hesabını sildiğinde sunucudaki verilerin hemen ve kalıcı olarak silinir. Kullanılmayan oturumlar 30 gün sonra, doğrulama bağlantıları 24 saat sonra geçersiz olur.</p>
+
+    <h2 id="hesap-silme">8. Hesabını ve verilerini silme</h2>
+    <div class="card">
+      <p><strong>Uygulama içinden ya da web üzerinden:</strong></p>
+      <ol>
+        <li><a href="https://planstrator-app.vercel.app">planstrator-app.vercel.app</a> adresini ya da telefonundaki uygulamayı aç ve giriş yap.</li>
+        <li>Sağ üstteki profil simgesine dokunarak <strong>Hesap ve bulut yedeği</strong> penceresini aç.</li>
+        <li><strong>Hesabımı sil</strong> düğmesine bas, parolanı yazıp onayla.</li>
+      </ol>
+      <p><strong>Giriş yapamıyorsan:</strong> hesabının e-posta adresinden <a href="mailto:planstrator.app@gmail.com">planstrator.app@gmail.com</a> adresine "hesabımı sil" konulu bir mail gönder. Talebin en geç 30 gün içinde yerine getirilir.</p>
+    </div>
+    <p>Hesap silinince şunlar kalıcı olarak silinir: adın, e-posta adresin, parola özetin, oturumların, bulut yedeğin, sahibi olduğun ortak panolar (içindeki görevlerle birlikte), başka panolardaki üyeliklerin ve davetlerin.</p>
+    <p>Başkasının panosuna eklediğin görevler o panoda kalır, ancak artık seninle ilişkilendirilmez. Cihazındaki yerel veriler sunucuda durmadığı için silme işleminden etkilenmez; onları Ayarlar sayfasından ya da uygulamayı kaldırarak silebilirsin.</p>
+    <p>Hesabını silmeden yalnızca verilerinin bir kopyasını istersen Ayarlar sayfasındaki dışa aktarma düğmesini kullanabilirsin.</p>
+
+    <h2>9. Hakların</h2>
+    <p>Hakkında hangi verilerin tutulduğunu öğrenme, bunların düzeltilmesini ya da silinmesini isteme hakkın vardır (Türkiye'de KVKK, Avrupa Birliği'nde GDPR kapsamında). Bunun için aşağıdaki adresten bize yazabilirsin.</p>
+
+    <h2>10. Çocuklar</h2>
+    <p>Planstrator 13 yaşından küçük çocuklara yönelik değildir ve onlardan bilerek veri toplamaz. Böyle bir hesap fark edersen bize yaz; hesabı sileriz.</p>
+
+    <h2>11. Değişiklikler</h2>
+    <p>Bu politika değişirse yeni sürüm bu sayfada yayımlanır ve üstteki tarih güncellenir. Önemli değişiklikleri hesap sahiplerine e-posta ile de bildiririz.</p>
+
+    <h2>12. İletişim</h2>
+    <p>Sorular ve talepler için: <a href="mailto:planstrator.app@gmail.com">planstrator.app@gmail.com</a></p>
+  </main>
+</body>
+</html>

@@ -1194,6 +1194,7 @@
           <p class="field__error" id="accountError" role="alert" hidden></p>
           <button class="btn btn--primary" id="accountSubmit" type="submit">Giriş yap</button>
         </form>
+        <p class="account-note">Hesap oluşturarak <a href="privacy.html" target="_blank" rel="noopener">gizlilik politikasını</a> kabul etmiş olursun.</p>
       </div>
       <div id="accountUser" hidden>
         <p class="row__title" id="accountWho"></p>
@@ -1208,8 +1209,29 @@
           <a class="btn btn--ghost" href="#boards">Ortak panolar</a>
           <button class="btn btn--ghost" id="logoutBtn" type="button">Çıkış yap</button>
         </div>
+        <div class="account-danger">
+          <a href="privacy.html" target="_blank" rel="noopener">Gizlilik politikası</a>
+          <button class="btn btn--danger btn--sm" id="deleteAccountBtn" type="button">Hesabımı sil</button>
+        </div>
       </div>
     </div>
+  </dialog>
+
+  <!-- HESABI SİLME: geri alınamadığı için parola yeniden istenir -->
+  <dialog class="modal modal--sm" id="deleteAccountDialog" aria-labelledby="deleteAccountTitle">
+    <form class="modal__body" id="deleteAccountForm" novalidate>
+      <h2 class="modal__title" id="deleteAccountTitle">Hesabın kalıcı olarak silinsin mi?</h2>
+      <p class="page-sub">Hesabın, buluttaki yedeğin ve sahibi olduğun ortak panolar sunucudan silinir. Bu işlem geri alınamaz. Bu cihazdaki görevlerin ve notların silinmez.</p>
+      <div class="field">
+        <label for="deleteAccountPassword">Onaylamak için parolanı yaz</label>
+        <input class="input" type="password" id="deleteAccountPassword" maxlength="200" autocomplete="current-password" aria-describedby="deleteAccountError">
+        <p class="field__error" id="deleteAccountError" role="alert" hidden></p>
+      </div>
+      <footer class="modal__foot">
+        <button class="btn btn--ghost" id="deleteAccountCancel" type="button">Vazgeç</button>
+        <button class="btn btn--danger" id="deleteAccountSubmit" type="submit">Hesabı sil</button>
+      </footer>
+    </form>
   </dialog>
 
   <!-- ONAY PENCERESİ (silme gibi geri alınamayan işlemler için) -->

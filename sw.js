@@ -8,12 +8,13 @@
 // ==========================================================
 
 // Dosya listesi değiştiğinde bu adı değiştir (v2, v3...); eski önbellek silinir.
-const CACHE_NAME = "planstrator-v8";
+const CACHE_NAME = "planstrator-v9";
 
 // Uygulamanın çalışması için gereken dosyalar ("uygulama kabuğu").
 const APP_FILES = [
   "./",
   "index.html",
+  "privacy.html",
   "manifest.webmanifest",
   "assets/icon-192.png",
   "assets/icon-512.png",

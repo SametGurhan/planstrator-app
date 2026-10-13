@@ -15,7 +15,7 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const target = path.join(root, "www");
 
 // Pakete girecek dosya ve klasörler
-const ITEMS = ["index.html", "manifest.webmanifest", "sw.js", "css", "js", "assets"];
+const ITEMS = ["index.html", "privacy.html", "manifest.webmanifest", "sw.js", "css", "js", "assets"];
 
 rmSync(target, { recursive: true, force: true }); // eski kopyayı sil
 mkdirSync(target);

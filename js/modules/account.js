@@ -188,6 +188,42 @@ async function handleResend() {
   button.disabled = false;
 }
 
+// ---------------- HESABI SİLME ----------------
+
+function showDeleteError(message) {
+  const errorElement = byId("deleteAccountError");
+  errorElement.textContent = message || "";
+  errorElement.hidden = !message;
+}
+
+function openDeleteDialog() {
+  byId("deleteAccountPassword").value = "";
+  showDeleteError("");
+  byId("deleteAccountDialog").showModal();
+}
+
+async function handleDeleteAccount(event) {
+  event.preventDefault();
+  const passwordInput = byId("deleteAccountPassword");
+  if (passwordInput.value === "") {
+    showDeleteError("Parolanı yaz.");
+    return;
+  }
+
+  const button = byId("deleteAccountSubmit");
+  button.disabled = true; // çift tıklamayı önle
+  try {
+    await api.deleteAccount(passwordInput.value);
+    byId("deleteAccountDialog").close();
+    setUser(null);
+    showToast("Hesabın silindi. Bu cihazdaki verilerin durmaya devam ediyor.");
+  } catch (error) {
+    showDeleteError(error.message);
+  }
+  passwordInput.value = ""; // parolayı sayfada tutma
+  button.disabled = false;
+}
+
 // Maildeki bağlantı kullanıcıyı ?verified=1 (ya da 0) ile uygulamaya geri getirir.
 function showVerificationResult() {
   const params = new URLSearchParams(window.location.search);
@@ -233,6 +269,9 @@ export async function initAccount(options) {
   byId("backupBtn").addEventListener("click", handleBackup);
   byId("restoreBtn").addEventListener("click", handleRestore);
   byId("resendVerifyBtn").addEventListener("click", handleResend);
+  byId("deleteAccountBtn").addEventListener("click", openDeleteDialog);
+  byId("deleteAccountForm").addEventListener("submit", handleDeleteAccount);
+  byId("deleteAccountCancel").addEventListener("click", () => byId("deleteAccountDialog").close());
   byId("accountModes").addEventListener("click", (event) => {
     const button = event.target.closest("[data-form-mode]");
     if (!button) return;
