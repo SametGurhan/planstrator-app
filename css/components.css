@@ -799,9 +799,50 @@ code { padding: 1px 6px; border-radius: 6px; background: var(--surface-2); font-
 .admin-table tbody tr:last-child td { border-bottom: 0; }
 .admin-name { font-weight: 600; margin-right: 8px; }
 .admin-actions { text-align: right; }
+/* Hesap penceresi: giriş yapılmış hal, ortalanmış profil */
+.account-profile { display: grid; justify-items: center; gap: 2px; margin: 4px 0 16px; text-align: center; }
+.account-profile__avatar {
+  display: grid; place-items: center;
+  width: 64px; height: 64px; margin-bottom: 8px;
+  border-radius: 50%;
+  background: var(--accent-soft); color: var(--accent);
+  font-size: 26px; font-weight: 700;
+}
+.account-profile__avatar .icon { width: 30px; height: 30px; }
+.account-profile__name { font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
+.account-profile__email { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.account-sync {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.account-sync > .icon { color: var(--accent); }
+.account-sync__text { flex: 1 1 160px; min-width: 0; }
+.account-sync__text .page-sub { margin-top: 0; font-size: 13px; }
+.account-sync__title { font-weight: 600; }
+.account-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
+
+/* Üst çubuktaki eşitleme düğmesi: sağ alttaki nokta durumu gösterir */
+.sync-btn { position: relative; }
+.sync-btn::after {
+  content: ""; position: absolute; right: 7px; bottom: 7px;
+  width: 8px; height: 8px; border-radius: 50%;
+  border: 2px solid var(--surface);
+  background: var(--ok);
+}
+.sync-btn[data-state="pending"]::after { background: var(--warn); }
+.sync-btn[data-state="offline"]::after { background: var(--muted); }
+.sync-btn[data-state="error"]::after { background: var(--danger); }
+.sync-btn[data-state="syncing"]::after { background: var(--accent); animation: sync-pulse 0.9s ease-in-out infinite alternate; }
+@keyframes sync-pulse { from { opacity: 0.35; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .sync-btn[data-state="syncing"]::after { animation: none; }
+}
+
 .account-note { margin-top: 12px; font-size: 0.85rem; color: var(--muted); }
 .account-note a, .account-danger a { color: var(--accent); }
-.account-danger { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 0.9rem; }
+.account-danger { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 18px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 0.9rem; }
 .verify-box { display: grid; gap: 10px; justify-items: start; margin: 12px 0; padding: 12px 14px; border: 1px solid var(--warn); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--warn) 12%, transparent); }
 
 .invite-list { display: grid; gap: 10px; margin-bottom: 16px; }

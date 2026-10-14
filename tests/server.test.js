@@ -344,3 +344,42 @@ test("yönetici paneli: yalnızca ADMIN_EMAIL hesabı kullanıcıları görebili
   delete process.env.ADMIN_EMAIL;
   assert.equal((await yonetici("GET", "/api/admin/users")).status, 403);
 });
+
+test("eşitleme: değişiklik yoksa veri gönderilmez, eski sürüme dayalı kayıt reddedilir", async () => {
+  const pc = createClient();
+  await pc("POST", "/api/auth/register", { email: "esitleme@example.com", name: "Eşitleme", password: "esitleme-parola-1" });
+  const telefon = createClient();
+  await telefon("POST", "/api/auth/login", { email: "esitleme@example.com", password: "esitleme-parola-1" });
+
+  // İlk kayıt: sunucuda hiç veri yokken base null olabilir.
+  const first = await pc("PUT", "/api/sync", { data: { tasks: [{ id: "g1", title: "Bilgisayardan" }] }, whiteboard: [], baseUpdatedAt: null });
+  assert.equal(first.status, 200);
+  const version1 = first.body.updatedAt;
+
+  // Aynı sürümü soran cihaza veri gönderilmez.
+  const check = await telefon("GET", `/api/sync?since=${version1}`);
+  assert.equal(check.body.unchanged, true);
+  assert.equal(check.body.data, undefined);
+
+  // Telefon bu sürümün üzerine kaydeder.
+  const second = await telefon("PUT", "/api/sync", {
+    data: { tasks: [{ id: "g1", title: "Bilgisayardan" }, { id: "g2", title: "Telefondan" }] }, whiteboard: [], baseUpdatedAt: version1,
+  });
+  assert.equal(second.status, 200);
+  assert.ok(second.body.updatedAt > version1);
+
+  // Bilgisayar hâlâ eski sürümü sanıyor: kaydı reddedilir (telefonun görevini ezemez).
+  const stale = await pc("PUT", "/api/sync", { data: { tasks: [{ id: "g1", title: "Bilgisayardan" }] }, whiteboard: [], baseUpdatedAt: version1 });
+  assert.equal(stale.status, 409);
+
+  // Eski sürümü soran cihaza yeni veri gelir.
+  const fresh = await pc("GET", `/api/sync?since=${version1}`);
+  assert.equal(fresh.body.unchanged, undefined);
+  assert.deepEqual(fresh.body.data.tasks.map((task) => task.id).sort(), ["g1", "g2"]);
+
+  // Görev silinince sunucudan da silinir; değişmeyen satır yeniden yazılmaz ama kaybolmaz.
+  const third = await pc("PUT", "/api/sync", { data: { tasks: [{ id: "g2", title: "Telefondan" }] }, whiteboard: [], baseUpdatedAt: second.body.updatedAt });
+  assert.equal(third.status, 200);
+  const final = (await telefon("GET", "/api/sync")).body.data.tasks;
+  assert.deepEqual(final.map((task) => task.title), ["Telefondan"]);
+});

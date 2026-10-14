@@ -1,5 +1,5 @@
 // ==========================================================
-// server/sync.js — Kişisel verinin buluta yedeklenmesi ve geri yüklenmesi
+// server/sync.js — Kişisel verinin bulutta saklanması ve cihazlar arasında eşitlenmesi
 //
 // Frontend tüm verisini tek bir nesne olarak gönderir. Sunucu bunu ayrıştırır:
 //   görevler, kategoriler, Pomodoro oturumları, hedefler, şablonlar -> kendi tablolarına
@@ -44,53 +44,21 @@ function fromJson(text) {
 
 // ---------------- KAYDETME ----------------
 
-// Eklenecek satırların SQL metinleri. ? işaretlerinin yerine değerler ayrıca verilir.
-const INSERT_CATEGORY = "INSERT OR REPLACE INTO categories (user_id, id, name, color, icon) VALUES (?, ?, ?, ?, ?)";
-const INSERT_TASK = `
-  INSERT OR REPLACE INTO tasks (user_id, id, title, description, status, priority, category_id, due_date, start_time,
-    estimated_minutes, spent_minutes, recurrence, sort_order, tags, subtasks, created_at, completed_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`;
-const INSERT_SESSION = `
-  INSERT OR REPLACE INTO pomodoro_sessions (user_id, id, type, task_id, date, started_at, ended_at, minutes)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-`;
-const INSERT_GOAL = `
-  INSERT OR REPLACE INTO goals (user_id, id, title, description, type, target_value, current_value, unit,
-    start_date, end_date, category_id, created_at, completed_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`;
-const INSERT_TEMPLATE = `
-  INSERT OR REPLACE INTO checklist_templates (user_id, id, name, description, category_id, tags, items)
-  VALUES (?, ?, ?, ?, ?, ?, ?)
-`;
-
-async function saveUserData(userId, data, whiteboard) {
-  // Tablolara girmeyen her şey tek bir JSON metni olur.
-  const extras = { whiteboard: asArray(whiteboard) };
-  for (const key in data) {
-    if (!TABLE_KEYS.includes(key)) extras[key] = data[key];
-  }
-  const extrasText = JSON.stringify(extras);
-  if (extrasText.length > MAX_EXTRAS_LENGTH) throw new HttpError(413, "Veri çok büyük; yedeklenemedi.");
-
-  const updatedAt = Date.now();
-
-  // Tüm sorguları bir listede topluyoruz: [sql, değerler]. Hepsi TEK işlemde çalışır;
-  // yarıda hata olursa hiçbiri uygulanmaz ve eski yedek aynen kalır.
-  const statements = [];
-
-  for (const table of ["categories", "tasks", "pomodoro_sessions", "goals", "checklist_templates"]) {
-    // Tablo adı kullanıcıdan gelmiyor, yukarıdaki sabit listeden geliyor; bu yüzden güvenli.
-    statements.push([`DELETE FROM ${table} WHERE user_id = ?`, [userId]]);
-  }
-
-  for (const item of validRecords(data.categories)) {
-    statements.push([INSERT_CATEGORY, [userId, item.id, cleanText(item.name, 40), cleanText(item.color, 9), cleanText(item.icon, 16)]]);
-  }
-  for (const item of validRecords(data.tasks)) {
-    statements.push([INSERT_TASK, [
-      userId, item.id, cleanText(item.title, 120), cleanText(item.description, 1000),
+// Kendi tablosu olan her bölüm için: tablo adı, sütunlar (ilki her zaman id) ve
+// bir kaydı sütun sırasına göre temizlenmiş değerlere çeviren fonksiyon.
+// Tablo ve sütun adları kullanıcıdan değil bu sabit listeden geldiği için SQL'e yazılması güvenlidir.
+const TABLES = [
+  {
+    key: "categories", table: "categories",
+    columns: ["id", "name", "color", "icon"],
+    toRow: (item) => [item.id, cleanText(item.name, 40), cleanText(item.color, 9), cleanText(item.icon, 16)],
+  },
+  {
+    key: "tasks", table: "tasks",
+    columns: ["id", "title", "description", "status", "priority", "category_id", "due_date", "start_time",
+      "estimated_minutes", "spent_minutes", "recurrence", "sort_order", "tags", "subtasks", "created_at", "completed_at"],
+    toRow: (item) => [
+      item.id, cleanText(item.title, 120), cleanText(item.description, 1000),
       oneOf(item.status, ["todo", "doing", "done"], item.completed === true ? "done" : "todo"),
       oneOf(item.priority, ["low", "normal", "high", "urgent"], "normal"),
       nullableText(item.categoryId, 64), cleanDate(item.dueDate), cleanText(item.startTime, 5),
@@ -98,32 +66,95 @@ async function saveUserData(userId, data, whiteboard) {
       oneOf(item.recurrence, ["none", "daily", "weekdays", "weekly", "monthly"], "none"),
       cleanNumber(item.order, 0), toJson(item.tags), toJson(item.subtasks),
       cleanDate(item.createdAt), cleanDate(item.completedAt) || null,
-    ]]);
-  }
-  for (const item of validRecords(data.pomodoroSessions)) {
-    statements.push([INSERT_SESSION, [
-      userId, item.id, oneOf(item.type, ["focus", "shortBreak", "longBreak", "custom"], "focus"),
+    ],
+  },
+  {
+    key: "pomodoroSessions", table: "pomodoro_sessions",
+    columns: ["id", "type", "task_id", "date", "started_at", "ended_at", "minutes"],
+    toRow: (item) => [
+      item.id, oneOf(item.type, ["focus", "shortBreak", "longBreak", "custom"], "focus"),
       nullableText(item.taskId, 64), cleanDate(item.date),
       Math.round(cleanNumber(item.startedAt, 0)), Math.round(cleanNumber(item.endedAt, 0)),
       Math.round(cleanNumber(item.minutes, 0)),
-    ]]);
-  }
-  for (const item of validRecords(data.goals)) {
-    statements.push([INSERT_GOAL, [
-      userId, item.id, cleanText(item.title, 120), cleanText(item.description, 300),
+    ],
+  },
+  {
+    key: "goals", table: "goals",
+    columns: ["id", "title", "description", "type", "target_value", "current_value", "unit",
+      "start_date", "end_date", "category_id", "created_at", "completed_at"],
+    toRow: (item) => [
+      item.id, cleanText(item.title, 120), cleanText(item.description, 300),
       oneOf(item.type, ["numeric", "simple"], "numeric"),
       cleanNumber(item.targetValue, 1), cleanNumber(item.currentValue, 0), cleanText(item.unit, 20),
       cleanDate(item.startDate), cleanDate(item.endDate), nullableText(item.categoryId, 64),
       cleanDate(item.createdAt), cleanDate(item.completedAt) || null,
-    ]]);
-  }
-  for (const item of validRecords(data.checklistTemplates)) {
-    statements.push([INSERT_TEMPLATE, [
-      userId, item.id, cleanText(item.name, 40), cleanText(item.description, 200),
+    ],
+  },
+  {
+    key: "checklistTemplates", table: "checklist_templates",
+    columns: ["id", "name", "description", "category_id", "tags", "items"],
+    toRow: (item) => [
+      item.id, cleanText(item.name, 40), cleanText(item.description, 200),
       nullableText(item.categoryId, 64), toJson(item.tags), toJson(item.items),
-    ]]);
+    ],
+  },
+];
+
+// Bir tabloyu gelen kayıtlarla aynı hale getirecek sorguları üretir.
+// Hepsini silip yeniden yazmak yerine yalnızca DEĞİŞEN satırlara dokunur: eşitleme her
+// değişiklikte çalıştığı için bu, veritabanına yazılan satır sayısını çok azaltır
+// (ücretsiz planın yazma sınırı okumadan çok daha düşüktür).
+async function buildTableChanges(userId, spec, records) {
+  const columnList = spec.columns.join(", ");
+  const existing = await query(`SELECT ${columnList} FROM ${spec.table} WHERE user_id = ?`, [userId]);
+  // id -> satırın değerlerinin metin hali (karşılaştırmak için)
+  const savedRows = new Map(existing.map((row) => [row.id, JSON.stringify(spec.columns.map((column) => row[column]))]));
+
+  const placeholders = spec.columns.map(() => "?").join(", ");
+  const insertSql = `INSERT OR REPLACE INTO ${spec.table} (user_id, ${columnList}) VALUES (?, ${placeholders})`;
+  const statements = [];
+  const seenIds = new Set();
+
+  for (const record of records) {
+    const row = spec.toRow(record);
+    if (seenIds.has(row[0])) continue; // aynı id iki kez gelirse ilkini al
+    seenIds.add(row[0]);
+    if (savedRows.get(row[0]) !== JSON.stringify(row)) statements.push([insertSql, [userId, ...row]]);
+  }
+  for (const id of savedRows.keys()) {
+    if (!seenIds.has(id)) statements.push([`DELETE FROM ${spec.table} WHERE user_id = ? AND id = ?`, [userId, id]]);
+  }
+  return statements;
+}
+
+// baseUpdatedAt: istemcinin elindeki verinin hangi sürüme dayandığı. Sunucudaki sürüm o
+// arada başka bir cihazdan değiştiyse kaydetmeyi reddederiz (409); istemci önce yeni
+// sürümü alıp kendi değişiklikleriyle birleştirir, sonra yeniden gönderir.
+// Böylece bir cihaz, diğerinin değişikliklerini farkında olmadan ezemez.
+async function saveUserData(userId, data, whiteboard, baseUpdatedAt) {
+  const current = await queryOne("SELECT updated_at FROM user_extras WHERE user_id = ?", [userId]);
+  const currentUpdatedAt = current ? current.updated_at : null;
+  if (baseUpdatedAt !== undefined && currentUpdatedAt !== null && baseUpdatedAt !== currentUpdatedAt) {
+    throw new HttpError(409, "Verilerin başka bir cihazda değişti.");
   }
 
+  // Tablolara girmeyen her şey tek bir JSON metni olur.
+  const extras = { whiteboard: asArray(whiteboard) };
+  for (const key in data) {
+    if (!TABLE_KEYS.includes(key)) extras[key] = data[key];
+  }
+  const extrasText = JSON.stringify(extras);
+  if (extrasText.length > MAX_EXTRAS_LENGTH) throw new HttpError(413, "Veri çok büyük; kaydedilemedi.");
+
+  // Sürüm numarası olarak zaman damgası; aynı milisaniyede iki kayıt olsa bile hep artsın.
+  const updatedAt = Math.max(Date.now(), (currentUpdatedAt || 0) + 1);
+
+  // Tüm sorguları bir listede topluyoruz: [sql, değerler]. Hepsi TEK işlemde çalışır;
+  // yarıda hata olursa hiçbiri uygulanmaz ve eski veri aynen kalır.
+  const statements = [];
+  for (const spec of TABLES) {
+    statements.push(...await buildTableChanges(userId, spec, validRecords(data[spec.key])));
+  }
   statements.push(["INSERT OR REPLACE INTO user_extras (user_id, data, updated_at) VALUES (?, ?, ?)", [userId, extrasText, updatedAt]]);
 
   await batch(statements);
@@ -220,19 +251,30 @@ async function loadUserData(userId) {
 export const syncRouter = Router();
 syncRouter.use(requireAuth); // buradaki tüm adresler giriş gerektirir
 
-// Yedeği getir
+// Veriyi getir. ?since=<sürüm> verilirse ve sunucudaki sürüm hâlâ oysa veri gönderilmez;
+// eşitleme sık sık "değişen bir şey var mı?" diye sorduğu için bu, gereksiz okumayı önler.
 syncRouter.get("/sync", async (request, response) => {
+  if (request.query.since !== undefined) {
+    const row = await queryOne("SELECT updated_at FROM user_extras WHERE user_id = ?", [request.user.id]);
+    if (row && row.updated_at === Number(request.query.since)) {
+      response.json({ updatedAt: row.updated_at, unchanged: true });
+      return;
+    }
+  }
   const saved = await loadUserData(request.user.id);
   response.json(saved || { updatedAt: null, data: null, whiteboard: [] });
 });
 
-// Yedeği kaydet
+// Veriyi kaydet
 syncRouter.put("/sync", async (request, response) => {
   const data = request.body.data;
   if (data === null || typeof data !== "object" || !Array.isArray(data.tasks)) {
     throw new HttpError(400, "Gönderilen veri geçerli değil.");
   }
-  const updatedAt = await saveUserData(request.user.id, data, request.body.whiteboard);
+  // baseUpdatedAt hiç gönderilmezse (eski sürüm uygulama) denetim yapılmaz.
+  const base = request.body.baseUpdatedAt;
+  const baseUpdatedAt = base === undefined ? undefined : (typeof base === "number" ? base : null);
+  const updatedAt = await saveUserData(request.user.id, data, request.body.whiteboard, baseUpdatedAt);
   response.json({ updatedAt: updatedAt });
 });
 

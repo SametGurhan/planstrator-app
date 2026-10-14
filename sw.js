@@ -8,7 +8,7 @@
 // ==========================================================
 
 // Dosya listesi değiştiğinde bu adı değiştir (v2, v3...); eski önbellek silinir.
-const CACHE_NAME = "planstrator-v10";
+const CACHE_NAME = "planstrator-v11";
 
 // Uygulamanın çalışması için gereken dosyalar ("uygulama kabuğu").
 const APP_FILES = [
@@ -33,6 +33,7 @@ const APP_FILES = [
   "js/storage.js",
   "js/theme.js",
   "js/utils.js",
+  "js/merge.js",
   "js/modules/account.js",
   "js/modules/admin.js",
   "js/modules/background.js",
@@ -47,6 +48,7 @@ const APP_FILES = [
   "js/modules/pomodoro.js",
   "js/modules/profile.js",
   "js/modules/settings.js",
+  "js/modules/sync.js",
   "js/modules/tasks.js",
   "js/modules/travel.js",
   "js/modules/whiteboard.js",

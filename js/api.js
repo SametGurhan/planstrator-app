@@ -99,8 +99,9 @@ export const api = {
   listUsers: () => request("GET", "/admin/users"),
   adminDeleteUser: (userId) => request("DELETE", `/admin/users/${userId}`),
 
-  // Bulut yedeği
-  loadBackup: () => request("GET", "/sync"),
+  // Eşitleme (bulut)
+  // since: elimizdeki sürüm; sunucuda değişiklik yoksa veri gelmez ({ unchanged: true }).
+  loadBackup: (since) => request("GET", since === undefined || since === null ? "/sync" : `/sync?since=${since}`),
   saveBackup: (backup) => request("PUT", "/sync", backup),
   stats: () => request("GET", "/stats"),
 

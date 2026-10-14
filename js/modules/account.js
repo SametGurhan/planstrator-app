@@ -1,19 +1,19 @@
 // ==========================================================
-// account.js — Hesap: kayıt, giriş, çıkış ve bulut yedeği (Ayarlar sayfasındaki kart)
+// account.js — Hesap: kayıt, giriş, çıkış ve hesap penceresi
 //
 // Dört durum vardır:
 //   "offline"    -> sunucu çalışmıyor (uygulama yalnızca dosya olarak açılmış)
 //   "guest"      -> sunucu var ama giriş yapılmamış
 //   "unverified" -> giriş yapılmış ama e-posta adresi henüz doğrulanmamış
 //   "user"       -> giriş yapılmış ve e-posta doğrulanmış
-// Uygulama hesap olmadan da tam çalışır; hesap yalnızca yedekleme ve ortak panolar içindir.
+// Uygulama hesap olmadan da tam çalışır; hesap cihazlar arası eşitleme ve ortak panolar içindir.
+// Giriş yapılınca eşitlemeyi sync.js yürütür; bu dosya yalnızca başlatır ve durdurur.
 // ==========================================================
 
 import { api } from "../api.js";
 import { IS_NATIVE_APP } from "../config.js";
-import { exportAll, importAll } from "../storage.js";
-import { askConfirm } from "../components.js";
-import { byId, showToast } from "../utils.js";
+import { startSync, stopSync, flushSync } from "./sync.js";
+import { byId, clear, icon, showToast } from "../utils.js";
 
 let status = "offline";  // "offline" | "guest" | "unverified" | "user"
 let currentUser = null;  // { id, email, name, emailVerified, isAdmin }
@@ -38,16 +38,12 @@ export function openAccountDialog() {
 // Ayarlar sayfasındaki tek satırlık özet
 function getSummaryText() {
   if (status === "offline") return "Sunucuya bağlı değil. Uygulama hesapsız çalışıyor.";
-  if (status === "guest") return "Giriş yapılmadı. Hesap açarsan verilerini yedekleyebilir ve ortak pano kullanabilirsin.";
+  if (status === "guest") return "Giriş yapılmadı. Hesap açarsan verilerin tüm cihazlarında kendiliğinden eşitlenir ve ortak pano kullanabilirsin.";
   if (status === "unverified") return `${currentUser.name} · ${currentUser.email} · e-posta doğrulanmadı`;
-  return `${currentUser.name} · ${currentUser.email}`;
+  return `${currentUser.name} · ${currentUser.email} · verilerin otomatik eşitleniyor`;
 }
 
 // ---------------- ÇİZİM ----------------
-
-function formatBackupTime(timestamp) {
-  return new Date(timestamp).toLocaleString("tr-TR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
-}
 
 export function renderAccount() {
   byId("accountSummary").textContent = getSummaryText();
@@ -73,13 +69,26 @@ export function renderAccount() {
       button.setAttribute("aria-pressed", String(isActive));
     }
   }
-  if (isSignedIn) {
-    byId("accountWho").textContent = `${currentUser.name} · ${currentUser.email}`;
-  }
+  byId("sidebarLogoutBtn").hidden = !isSignedIn;
+  if (isSignedIn) renderProfileCard();
   if (status === "unverified") {
     byId("accountVerifyText").textContent =
       `${currentUser.email} adresine bir doğrulama bağlantısı gönderdik. Ortak panoları kullanmak için maildeki bağlantıya tıkla. Gelen kutusunda yoksa spam klasörüne bak.`;
   }
+}
+
+// Hesap penceresinin üstündeki ortalanmış profil: baş harf, ad ve e-posta.
+function renderProfileCard() {
+  const avatar = byId("accountProfileAvatar");
+  clear(avatar);
+  const name = currentUser.name.trim();
+  if (name === "") {
+    avatar.append(icon("user"));
+  } else {
+    avatar.textContent = Array.from(name)[0].toLocaleUpperCase("tr");
+  }
+  byId("accountProfileName").textContent = currentUser.name;
+  byId("accountProfileEmail").textContent = currentUser.email;
 }
 
 function showAccountError(message) {
@@ -92,6 +101,12 @@ function setUser(user) {
   currentUser = user;
   status = "guest";
   if (user) status = user.emailVerified ? "user" : "unverified";
+  // Giriş varsa eşitleme başlar (ilk seferde bu cihazdaki veriyle hesaptakini birleştirir).
+  if (user) {
+    startSync(user.id);
+  } else {
+    stopSync();
+  }
   renderAccount();
   if (onChange) onChange();
 }
@@ -117,13 +132,13 @@ async function handleSubmit(event) {
       message = result.user.emailVerified ? "Hesabın oluşturuldu." : "Hesabın oluşturuldu. E-postana doğrulama bağlantısı gönderdik.";
     }
     showToast(message);
-    refreshBackupInfo();
   } catch (error) {
     showAccountError(error.message);
   }
 }
 
 async function handleLogout() {
+  await flushSync(); // gönderilmemiş değişiklik kalmasın
   try {
     await api.logout();
     setUser(null);
@@ -131,49 +146,6 @@ async function handleLogout() {
   } catch (error) {
     showToast(error.message);
   }
-}
-
-// Bu cihazdaki tüm veriyi sunucuya gönderir.
-async function handleBackup() {
-  const button = byId("backupBtn");
-  button.disabled = true; // çift tıklamayı önle
-  try {
-    const local = exportAll();
-    const result = await api.saveBackup({ data: local.data, whiteboard: local.whiteboard });
-    byId("backupInfo").textContent = `Son yedek: ${formatBackupTime(result.updatedAt)}`;
-    showToast("Verilerin buluta yedeklendi.");
-  } catch (error) {
-    showToast(error.message);
-  }
-  button.disabled = false;
-}
-
-// Sunucudaki yedeği bu cihaza yükler (bu cihazdaki verinin yerine geçer).
-async function handleRestore() {
-  let backup = null;
-  try {
-    backup = await api.loadBackup();
-  } catch (error) {
-    showToast(error.message);
-    return;
-  }
-  if (backup.data === null) {
-    showToast("Bulutta henüz bir yedeğin yok.");
-    return;
-  }
-
-  askConfirm({
-    title: "Buluttaki yedek yüklensin mi?",
-    text: `${formatBackupTime(backup.updatedAt)} tarihli yedek, bu cihazdaki verilerin yerine geçecek.`,
-    confirmLabel: "Yükle",
-    onConfirm: () => {
-      if (importAll({ app: "planstrator", data: backup.data, whiteboard: backup.whiteboard })) {
-        window.location.reload();
-      } else {
-        showToast("Yedek yüklenemedi.");
-      }
-    },
-  });
 }
 
 async function handleResend() {
@@ -235,18 +207,6 @@ function showVerificationResult() {
   window.history.replaceState(null, "", window.location.pathname + window.location.hash);
 }
 
-async function refreshBackupInfo() {
-  if (currentUser === null) return;
-  try {
-    const backup = await api.loadBackup();
-    byId("backupInfo").textContent = backup.updatedAt
-      ? `Son yedek: ${formatBackupTime(backup.updatedAt)}`
-      : "Henüz buluta yedek alınmadı.";
-  } catch (error) {
-    byId("backupInfo").textContent = "";
-  }
-}
-
 // options.onChange: giriş durumu değişince çağrılır.
 export async function initAccount(options) {
   onChange = options.onChange;
@@ -266,8 +226,7 @@ export async function initAccount(options) {
 
   byId("accountForm").addEventListener("submit", handleSubmit);
   byId("logoutBtn").addEventListener("click", handleLogout);
-  byId("backupBtn").addEventListener("click", handleBackup);
-  byId("restoreBtn").addEventListener("click", handleRestore);
+  byId("sidebarLogoutBtn").addEventListener("click", handleLogout);
   byId("resendVerifyBtn").addEventListener("click", handleResend);
   byId("deleteAccountBtn").addEventListener("click", openDeleteDialog);
   byId("deleteAccountForm").addEventListener("submit", handleDeleteAccount);
@@ -287,7 +246,6 @@ export async function initAccount(options) {
   try {
     const result = await api.me();
     setUser(result.user);
-    refreshBackupInfo();
   } catch (error) {
     status = "offline";
     renderAccount();

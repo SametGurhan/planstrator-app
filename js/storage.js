@@ -77,6 +77,21 @@ function migrate(data) {
   return data;
 }
 
+// ---------- Değişiklik haberi ----------
+// Eşitleme (sync.js) bu cihazda bir şey değiştiğini bilmeli ki sunucuya göndersin.
+// storage.js onu içe aktarmaz; yalnızca kayıtlı bir fonksiyonu çağırır. Böylece
+// storage.js eşitlemeden habersiz kalır ve testlerde tek başına çalışabilir.
+let changeListener = null;
+
+// listener(kind, data): kind "data" ise data kaydedilen yeni veridir; "whiteboard" ise çizim değişmiştir.
+export function onLocalChange(listener) {
+  changeListener = listener;
+}
+
+function notifyChange(kind, data) {
+  if (changeListener) changeListener(kind, data);
+}
+
 // Kayıtlı veriyi okur. Sonuç her zaman { status, data } biçimindedir:
 //   "ok"          -> veri okundu
 //   "empty"       -> hiç kayıt yok (ilk açılış)
@@ -117,6 +132,7 @@ export function saveData(data) {
     // data içindeki tüm bölümleri (tasks, categories, ...) sürüm numarasıyla birlikte sakla.
     const payload = { version: DATA_VERSION, ...data };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); // nesne -> metin
+    notifyChange("data", payload);
     return true;
   } catch (error) {
     console.error("Veri kaydedilemedi:", error);
@@ -170,6 +186,7 @@ export function loadWhiteboard() {
 export function saveWhiteboard(strokes) {
   try {
     localStorage.setItem(WHITEBOARD_KEY, JSON.stringify(strokes));
+    notifyChange("whiteboard");
     return true;
   } catch (error) {
     console.error("Çizim kaydedilemedi:", error);
@@ -213,9 +230,23 @@ export function importAll(backup) {
     if (current !== null) localStorage.setItem(BACKUP_KEY, current);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(backup.data));
     if (Array.isArray(backup.whiteboard)) saveWhiteboard(backup.whiteboard);
+    notifyChange("data", backup.data); // dosyadan yüklenen veri hesaba da gitsin
     return true;
   } catch (error) {
     console.error("Yedek yüklenemedi:", error);
+    return false;
+  }
+}
+
+// Başka bir cihazdan gelen veriyi yazar. Değişiklik haberi VERMEZ: bu veri zaten
+// sunucudan geldi, geri göndermeye gerek yok. Sonrasında state.js yeniden yüklenmelidir.
+export function writeSyncedData(data, whiteboard) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(WHITEBOARD_KEY, JSON.stringify(Array.isArray(whiteboard) ? whiteboard : []));
+    return true;
+  } catch (error) {
+    console.error("Eşitlenen veri kaydedilemedi:", error);
     return false;
   }
 }

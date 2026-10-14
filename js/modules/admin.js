@@ -107,7 +107,7 @@ export function initAdmin() {
     if (!button) return;
     askConfirm({
       title: "Kullanıcı silinsin mi?",
-      text: `${button.dataset.userLabel} hesabı, bulut yedeği ve sahibi olduğu ortak panolarla birlikte kalıcı olarak silinecek. Bu işlem geri alınamaz.`,
+      text: `${button.dataset.userLabel} hesabı, sunucudaki verileri ve sahibi olduğu ortak panolarla birlikte kalıcı olarak silinecek. Bu işlem geri alınamaz.`,
       confirmLabel: "Kullanıcıyı sil",
       onConfirm: () => deleteUser(Number(button.dataset.deleteUser)),
     });

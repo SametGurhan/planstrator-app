@@ -63,14 +63,14 @@
     <p class="updated">Son güncelleme: 13 Ekim 2026</p>
 
     <div class="summary">
-      <p><strong>Kısaca:</strong> Planstrator hesap açmadan kullanılabilir ve o durumda hiçbir verin cihazından çıkmaz. Hesap açarsan yalnızca adını, e-posta adresini ve senin yedeklediğin ya da ortak panolara yazdığın içeriği saklarız. Reklam göstermeyiz, seni izlemeyiz, verilerini satmayız. Hesabını istediğin an silebilirsin.</p>
+      <p><strong>Kısaca:</strong> Planstrator hesap açmadan kullanılabilir ve o durumda hiçbir verin cihazından çıkmaz. Hesap açarsan adını, e-posta adresini, cihazların arasında eşitlenen verilerini ve ortak panolara yazdığın içeriği saklarız. Reklam göstermeyiz, seni izlemeyiz, verilerini satmayız. Hesabını istediğin an silebilirsin.</p>
     </div>
 
     <h2>1. Bu politika neyi kapsar?</h2>
     <p>Bu metin, Planstrator web uygulamasını (<a href="https://planstrator-app.vercel.app">planstrator-app.vercel.app</a>) ve aynı uygulamanın telefona kurulan sürümünü kapsar. Planstrator bireysel bir geliştirici tarafından hazırlanan, ücretsiz bir planlama uygulamasıdır.</p>
 
     <h2>2. Cihazında kalan veriler</h2>
-    <p>Görevlerin, notların, hedeflerin, alışkanlıkların, seyahat planların, Pomodoro kayıtların, çizimlerin ve ayarların tarayıcının ya da uygulamanın yerel depolama alanında (localStorage) durur. Sen buluta yedekle demediğin sürece bu veriler sunucumuza gönderilmez; biz göremeyiz.</p>
+    <p>Görevlerin, notların, hedeflerin, alışkanlıkların, seyahat planların, Pomodoro kayıtların, çizimlerin ve ayarların tarayıcının ya da uygulamanın yerel depolama alanında (localStorage) durur. Hesap açmadığın sürece bu veriler sunucumuza gönderilmez.</p>
     <p>Bu verileri Ayarlar sayfasından dışa aktarabilir ya da silebilirsin. Tarayıcı verilerini temizlersen veya uygulamayı kaldırırsan onlar da silinir.</p>
 
     <h2>3. Hesap açarsan topladığımız veriler</h2>
@@ -82,7 +82,7 @@
         <tbody>
           <tr><td>Ad ve e-posta adresi</td><td>Hesabını tanımak, doğrulama ve davet maillerini göndermek, ortak panolarda seni diğer üyelere göstermek</td></tr>
           <tr><td>Parola</td><td>Giriş yapabilmen için. Parolanın kendisi saklanmaz; yalnızca geri çevrilemeyen bir özeti (scrypt) tutulur</td></tr>
-          <tr><td>Bulut yedeği</td><td>"Buluta yedekle" düğmesine bastığında, 2. maddedeki verilerinin bir kopyası başka cihazda geri yükleyebilmen için saklanır</td></tr>
+          <tr><td>Eşitlenen veriler</td><td>Giriş yaptığında 2. maddedeki verilerinin bir kopyası, aynı hesapla açtığın bütün cihazlarda aynı kalsın diye sunucuda saklanır ve her değişiklikte güncellenir. Çıkış yaptığında cihazındaki kopya silinmez</td></tr>
           <tr><td>Ortak pano içeriği</td><td>Pano adları, görevler, üyeler ve davet edilen e-posta adresleri; panonun üyeleri görebilsin diye</td></tr>
           <tr><td>Kayıt tarihi ve son giriş zamanı</td><td>Kullanılmayan hesapları ayırt edebilmek ve kötüye kullanımı fark edebilmek için. Yalnızca uygulamanın yöneticisi görebilir</td></tr>
           <tr><td>Oturum bilgisi</td><td>Giriş yapmış kalman için tarayıcında bir oturum çerezi (telefon uygulamasında bir oturum anahtarı) durur. 30 gün geçerlidir; sunucuda yalnızca özeti saklanır</td></tr>
@@ -98,7 +98,7 @@
     <h2>5. Verilerin nerede durur, kimler işler?</h2>
     <p>Verilerini kimseyle satış ya da reklam amacıyla paylaşmayız. Uygulamayı çalıştırabilmek için şu hizmet sağlayıcıları kullanırız:</p>
     <ul>
-      <li><strong>Turso</strong>: veritabanı. Hesap, yedek ve pano verileri Avrupa Birliği'ndeki (İrlanda) sunucularda saklanır.</li>
+      <li><strong>Turso</strong>: veritabanı. Hesap, eşitlenen veriler ve pano verileri Avrupa Birliği'ndeki (İrlanda) sunucularda saklanır.</li>
       <li><strong>Vercel</strong>: uygulamanın barındırılması. İstekleri iletirken IP adresi gibi teknik erişim kayıtlarını kendi politikası kapsamında tutabilir.</li>
       <li><strong>Google (Gmail)</strong>: doğrulama ve davet maillerinin gönderilmesi. Bu amaçla adın ve e-posta adresin mail içeriğiyle birlikte Google'a iletilir.</li>
     </ul>
@@ -120,7 +120,7 @@
       </ol>
       <p><strong>Giriş yapamıyorsan:</strong> hesabının e-posta adresinden <a href="mailto:planstrator.app@gmail.com">planstrator.app@gmail.com</a> adresine "hesabımı sil" konulu bir mail gönder. Talebin en geç 30 gün içinde yerine getirilir.</p>
     </div>
-    <p>Hesap silinince şunlar kalıcı olarak silinir: adın, e-posta adresin, parola özetin, oturumların, bulut yedeğin, sahibi olduğun ortak panolar (içindeki görevlerle birlikte), başka panolardaki üyeliklerin ve davetlerin.</p>
+    <p>Hesap silinince şunlar kalıcı olarak silinir: adın, e-posta adresin, parola özetin, oturumların, sunucudaki eşitlenmiş verilerin, sahibi olduğun ortak panolar (içindeki görevlerle birlikte), başka panolardaki üyeliklerin ve davetlerin.</p>
     <p>Başkasının panosuna eklediğin görevler o panoda kalır, ancak artık seninle ilişkilendirilmez. Cihazındaki yerel veriler sunucuda durmadığı için silme işleminden etkilenmez; onları Ayarlar sayfasından ya da uygulamayı kaldırarak silebilirsin.</p>
     <p>Hesabını silmeden yalnızca verilerinin bir kopyasını istersen Ayarlar sayfasındaki dışa aktarma düğmesini kullanabilirsin.</p>
 

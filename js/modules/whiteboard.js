@@ -302,6 +302,16 @@ function downloadImage() {
 
 // ---------------- DIŞARIYA AÇIK ----------------
 
+// Başka bir cihazdan yeni çizim gelince sync.js çağırır: kayıtlı çizimi yeniden okur ve çizer.
+export function reloadWhiteboard() {
+  strokes = loadWhiteboard().filter(isValidStroke);
+  redoStack = [];
+  if (baseCanvas.width > 0) {
+    redrawBase();
+    render();
+  }
+}
+
 // Sayfa her açıldığında app.js çağırır (tuval ancak görünürken ölçülebilir).
 export function renderWhiteboard() {
   resizeCanvas();

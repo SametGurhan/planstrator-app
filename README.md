@@ -34,7 +34,7 @@ Tarayıcıda `http://localhost:5500` adresini aç. Hiçbir ayar gerekmez: verita
 npm test
 ```
 
-52 test çalışır: tarih ve tekrar hesapları, veri katmanı (kaydetme, eski sürümden geçiş, bozuk veri), sunucu (kayıt, giriş, yedekleme, davet, yetki) ve e-posta doğrulama.
+62 test çalışır: tarih ve tekrar hesapları, veri katmanı (kaydetme, eski sürümden geçiş, bozuk veri), cihazlar arası birleştirme kuralları, sunucu (kayıt, giriş, eşitleme, davet, yetki, yönetim, hesap silme) ve e-posta doğrulama.
 
 ## Özellikler
 
@@ -51,13 +51,13 @@ npm test
 | Notlar | Kategorili, aranabilir, görevle ilişkilendirilebilir notlar |
 | Seyahat | Gün gün plan, bavul listesi, bütçe ve harcamalar |
 | Beyaz Tahta | Serbest çizim, şekiller, geri al, PNG indirme |
-| Ayarlar | Profil, açık/koyu mod, renk teması, arka plan sahnesi, yedekleme, hesap |
+| Ayarlar | Profil, açık/koyu mod, renk teması, arka plan sahnesi, dosya yedeği, hesap |
 
 ## Veri nerede duruyor?
 
 - **Cihazda:** kişisel verin tarayıcının `localStorage` alanında durur (yaklaşık 5 MB sınır). Kimse başkasının verisini göremez; her kurulum kendi boş kopyasıyla başlar. Tarayıcıya ve adrese özeldir; tarayıcı verisini temizlersen silinir.
 - **Dosya yedeği:** Ayarlar → *Yedeği indir (JSON)* ve *Yedekten geri yükle*.
-- **Bulut yedeği:** hesap açıp *Buluta yedekle* dersen verin sunucuya yazılır; başka cihazda *Buluttan geri yükle* ile alırsın. Eşitleme kendiliğinden değildir; son yedekleyen kazanır.
+- **Otomatik eşitleme:** aynı hesapla giriş yapılan bütün cihazlarda veri kendiliğinden aynı kalır. Bir şey değişince 2 saniye içinde gönderilir; uygulamaya dönünce ve açıkken dakikada bir yeni değişiklik var mı diye bakılır. Üst çubuktaki bulut simgesinin noktası durumu gösterir (yeşil: eşitlendi, sarı: gönderilecek, gri: çevrimdışı, kırmızı: hata). İki cihazda aynı anda değişiklik olursa ikisi kayıt kayıt birleştirilir (`js/merge.js`); aynı kayıt iki yerde birden değiştiyse son gönderen geçerli olur. Pomodoro sayacı her cihazda ayrı çalışır.
 - **Ortak panolar:** yalnızca sunucuda durur, üyeler arasında 8 saniyede bir tazelenir.
 
 ## Ortak pano nasıl kullanılır?

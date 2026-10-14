@@ -56,6 +56,8 @@
     <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
     <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18.5h10.5a4 4 0 0 0 .7-7.94 6 6 0 0 0-11.6-1.3A4.6 4.6 0 0 0 7 18.5z"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l-4-4 4-4M6 12h10"/></symbol>
     <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.6-2.9 8.3-7 10-4.1-1.7-7-5.4-7-10V6l7-3zM9 12l2 2 4-4"/></symbol>
     <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
@@ -116,6 +118,11 @@
         </ul>
       </nav>
 
+      <!-- Yalnızca giriş yapılmışken görünür (account.js) -->
+      <button class="nav__link sidebar__logout" id="sidebarLogoutBtn" type="button" hidden>
+        <svg class="icon"><use href="#i-logout"></use></svg>
+        <span class="nav__label">Çıkış yap</span>
+      </button>
       <button class="sidebar__collapse" id="collapseBtn" type="button" aria-label="Menüyü daralt" aria-expanded="true">
         <svg class="icon"><use href="#i-chevron"></use></svg>
         <span class="nav__label">Menüyü daralt</span>
@@ -144,6 +151,10 @@
           <input type="search" id="searchInput" placeholder="Görev ve notlarda ara…" autocomplete="off">
         </label>
 
+        <!-- Eşitleme durumu: yalnızca giriş yapılmışken görünür; rengini data-state belirler (sync.js) -->
+        <button class="icon-btn sync-btn" id="syncBtn" type="button" data-state="off" aria-label="Eşitleme" hidden>
+          <svg class="icon"><use href="#i-cloud"></use></svg>
+        </button>
         <button class="icon-btn" id="themeBtn" type="button" aria-label="Koyu temaya geç">
           <svg class="icon"><use id="themeIcon" href="#i-moon"></use></svg>
         </button>
@@ -696,7 +707,7 @@
 
           <!-- Hesap: ayrıntılar ayrı bir pencerede (accountDialog) açılır -->
           <article class="card settings-card">
-            <header class="card__head"><h2 class="card__title">Hesap ve bulut yedeği</h2></header>
+            <header class="card__head"><h2 class="card__title">Hesap ve eşitleme</h2></header>
             <p class="page-sub" id="accountSummary"></p>
             <div class="settings-card__actions">
               <button class="btn btn--ghost" type="button" data-open-account>Hesabı aç</button>
@@ -748,7 +759,7 @@
                     <th scope="col">Kayıt tarihi</th>
                     <th scope="col">Son giriş</th>
                     <th scope="col">Pano</th>
-                    <th scope="col">Yedek</th>
+                    <th scope="col">Bulut verisi</th>
                     <th scope="col" aria-label="İşlem"></th>
                   </tr>
                 </thead>
@@ -1200,16 +1211,16 @@
   <dialog class="modal" id="accountDialog" aria-labelledby="accountDialogTitle">
     <div class="modal__body">
       <header class="modal__head">
-        <h2 class="modal__title" id="accountDialogTitle">Hesap ve bulut yedeği</h2>
+        <h2 class="modal__title" id="accountDialogTitle">Hesap</h2>
         <button class="icon-btn icon-btn--sm" id="accountDialogClose" type="button" aria-label="Kapat">
           <svg class="icon"><use href="#i-close"></use></svg>
         </button>
       </header>
       <div id="accountOffline">
-        <p class="page-sub" id="accountOfflineText">Hesap özellikleri (bulut yedeği ve arkadaşlarla ortak panolar) için Planstrator sunucusu gerekir. Proje klasöründe <code>npm start</code> çalıştırıp uygulamayı <code>http://localhost:5500</code> adresinden aç. Sunucu olmadan da uygulamanın geri kalanı tam çalışır.</p>
+        <p class="page-sub" id="accountOfflineText">Hesap özellikleri (cihazlar arası eşitleme ve arkadaşlarla ortak panolar) için Planstrator sunucusu gerekir. Proje klasöründe <code>npm start</code> çalıştırıp uygulamayı <code>http://localhost:5500</code> adresinden aç. Sunucu olmadan da uygulamanın geri kalanı tam çalışır.</p>
       </div>
       <div id="accountGuest" hidden>
-        <p class="page-sub">Hesap açarsan verilerini buluta yedekleyebilir, başka cihazda geri yükleyebilir ve arkadaşlarınla ortak pano kullanabilirsin.</p>
+        <p class="page-sub">Hesap açarsan verilerin bilgisayarında ve telefonunda kendiliğinden eşitlenir; arkadaşlarınla ortak pano da kullanabilirsin.</p>
         <div class="segmented account-modes" id="accountModes" role="group" aria-label="Giriş ya da kayıt">
           <button class="segmented__btn" type="button" data-form-mode="login">Giriş yap</button>
           <button class="segmented__btn" type="button" data-form-mode="register">Hesap oluştur</button>
@@ -1233,17 +1244,32 @@
         <p class="account-note">Hesap oluşturarak <a href="privacy.html" target="_blank" rel="noopener">gizlilik politikasını</a> kabul etmiş olursun.</p>
       </div>
       <div id="accountUser" hidden>
-        <p class="row__title" id="accountWho"></p>
+        <div class="account-profile">
+          <span class="account-profile__avatar" id="accountProfileAvatar" aria-hidden="true"></span>
+          <p class="account-profile__name" id="accountProfileName"></p>
+          <p class="account-profile__email" id="accountProfileEmail"></p>
+        </div>
         <div class="verify-box" id="accountVerify" role="status" hidden>
           <p id="accountVerifyText"></p>
           <button class="btn btn--ghost btn--sm" id="resendVerifyBtn" type="button">Maili yeniden gönder</button>
         </div>
-        <p class="page-sub" id="backupInfo"></p>
-        <div class="settings-card__actions">
-          <button class="btn btn--primary" id="backupBtn" type="button">Buluta yedekle</button>
-          <button class="btn btn--ghost" id="restoreBtn" type="button">Buluttan geri yükle</button>
-          <a class="btn btn--ghost" href="#boards">Ortak panolar</a>
-          <button class="btn btn--ghost" id="logoutBtn" type="button">Çıkış yap</button>
+        <div class="account-sync">
+          <svg class="icon"><use href="#i-cloud"></use></svg>
+          <div class="account-sync__text">
+            <p class="account-sync__title">Otomatik eşitleme açık</p>
+            <p class="page-sub" id="accountSyncText" role="status"></p>
+          </div>
+          <button class="btn btn--ghost btn--sm" id="accountSyncBtn" type="button">Şimdi eşitle</button>
+        </div>
+        <div class="account-actions">
+          <a class="btn btn--ghost" href="#boards">
+            <svg class="icon"><use href="#i-users"></use></svg>
+            <span>Ortak panolar</span>
+          </a>
+          <button class="btn btn--ghost" id="logoutBtn" type="button">
+            <svg class="icon"><use href="#i-logout"></use></svg>
+            <span>Çıkış yap</span>
+          </button>
         </div>
         <div class="account-danger">
           <a href="privacy.html" target="_blank" rel="noopener">Gizlilik politikası</a>
@@ -1257,7 +1283,7 @@
   <dialog class="modal modal--sm" id="deleteAccountDialog" aria-labelledby="deleteAccountTitle">
     <form class="modal__body" id="deleteAccountForm" novalidate>
       <h2 class="modal__title" id="deleteAccountTitle">Hesabın kalıcı olarak silinsin mi?</h2>
-      <p class="page-sub">Hesabın, buluttaki yedeğin ve sahibi olduğun ortak panolar sunucudan silinir. Bu işlem geri alınamaz. Bu cihazdaki görevlerin ve notların silinmez.</p>
+      <p class="page-sub">Hesabın, sunucudaki eşitlenmiş verilerin ve sahibi olduğun ortak panolar silinir. Bu işlem geri alınamaz. Bu cihazdaki görevlerin ve notların silinmez.</p>
       <div class="field">
         <label for="deleteAccountPassword">Onaylamak için parolanı yaz</label>
         <input class="input" type="password" id="deleteAccountPassword" maxlength="200" autocomplete="current-password" aria-describedby="deleteAccountError">

@@ -35,8 +35,9 @@ let timer = null; // zamanlayıcının durumu (bkz. bölüm 6)
 // 1) ORTAK YARDIMCILAR
 // ==========================================================
 
-function persist() {
-  const saved = saveData({
+// Bellekteki tüm veri, kaydedildiği biçimiyle (eşitleme de bunu kullanır).
+export function getAllData() {
+  return {
     tasks: tasks,
     categories: categories,
     checklistTemplates: checklistTemplates,
@@ -49,7 +50,11 @@ function persist() {
     habitEntries: habitEntries,
     notes: noteStore.all(),
     trips: tripStore.all(),
-  });
+  };
+}
+
+function persist() {
+  const saved = saveData(getAllData());
   if (!saved) showToast("Değişiklik bu tarayıcıya kaydedilemedi.");
 }
 

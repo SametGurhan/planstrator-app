@@ -3,7 +3,7 @@
 // Görevi: tema, menü ve sayfa geçişlerini yönetmek, modülleri başlatmak.
 // ==========================================================
 
-import { initState } from "./state.js";
+import { initState, getAllData } from "./state.js";
 import { initConfirmDialog } from "./components.js";
 import { initDashboard, renderDashboard, setSearchText } from "./modules/dashboard.js";
 import { initTasks, renderTasks, setTaskSearchText } from "./modules/tasks.js";
@@ -15,14 +15,15 @@ import { initNotes, renderNotes, setNotesSearchText } from "./modules/notes.js";
 import { initTravel, renderTravel } from "./modules/travel.js";
 import { initPomodoro, renderPomodoro, setPageTitle } from "./modules/pomodoro.js";
 import { initChecklists, renderChecklists } from "./modules/checklists.js";
-import { initWhiteboard, renderWhiteboard } from "./modules/whiteboard.js";
+import { initWhiteboard, renderWhiteboard, reloadWhiteboard } from "./modules/whiteboard.js";
 import { initSettings, renderSettings } from "./modules/settings.js";
 import { initAccount, getCurrentUser } from "./modules/account.js";
 import { initProfile, renderProfile } from "./modules/profile.js";
 import { initBoards, renderBoards } from "./modules/boards.js";
 import { initAdmin, renderAdmin } from "./modules/admin.js";
+import { initSync } from "./modules/sync.js";
 import { initBackground } from "./modules/background.js";
-import { initTheme } from "./theme.js";
+import { initTheme, applyAppearance } from "./theme.js";
 import { readPreference, savePreference } from "./storage.js";
 import { byId, clear, el, todayKey, formatLongDate, formatWeekday, showToast } from "./utils.js";
 
@@ -216,6 +217,17 @@ function init() {
   initSettings();
   initBoards();
   initAdmin();
+  // Başka bir cihazdan veri gelince: bellekteki veriyi yeniden oku ve açık sayfayı yeniden çiz.
+  initSync({
+    getLocalData: getAllData,
+    onRemoteApplied: () => {
+      initState();
+      reloadWhiteboard();
+      applyAppearance();
+      renderProfile();
+      refreshCurrentView("");
+    },
+  });
   // Hesap durumu sunucudan sorulur (yanıtı beklemeden devam ederiz); giriş / çıkışta
   // açık sayfa tazelenir, böylece Ortak Panolar doğru hali gösterir.
   initAccount({
