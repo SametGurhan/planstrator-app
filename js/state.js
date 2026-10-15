@@ -9,7 +9,7 @@
 //           7) Hedefler, alışkanlıklar, notlar, seyahatler
 // ==========================================================
 
-import { loadData, saveData } from "./storage.js";
+import { loadData, saveData, saveStartingData } from "./storage.js";
 import {
   createSampleTasks, createDefaultCategories, createSampleTemplates, createSampleSessions,
   createSampleGoals, createSampleHabits, createSampleHabitEntries, createSampleNotes, createSampleTrips,
@@ -132,6 +132,8 @@ export function initState() {
     // İlk açılış ya da okunamayan veri: örnek verilerle başla.
     loadSampleData();
     persist();
+    // Eşitleme bu hali "kullanıcı henüz bir şey yapmadı" diye bilsin (bkz. storage.js).
+    saveStartingData(getAllData());
   }
   return result.status;
 }
@@ -304,6 +306,15 @@ export function toggleTask(taskId) {
   const task = getTaskById(taskId);
   if (!task) return null;
   return updateTask(taskId, { completed: !task.completed });
+}
+
+// Bir alt görevi işaretler ya da işaretini kaldırır.
+export function toggleSubtask(taskId, subtaskId) {
+  const task = getTaskById(taskId);
+  if (!task) return null;
+  const subtasks = task.subtasks.map((subtask) =>
+    subtask.id === subtaskId ? { ...subtask, done: !subtask.done } : subtask);
+  return updateTask(taskId, { subtasks: subtasks });
 }
 
 // Panoda bir kartı taşır: durumunu değiştirir ve hedef sütundaki yerini ayarlar.

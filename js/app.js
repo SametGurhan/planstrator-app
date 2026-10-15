@@ -56,8 +56,7 @@ const MOBILE_QUERY = window.matchMedia("(max-width: 860px)");
 const app = byId("app");
 const backdrop = byId("backdrop");
 const menuBtn = byId("menuBtn");
-const collapseBtn = byId("collapseBtn");       // menünün altındaki düğme
-const collapseTopBtn = byId("collapseTopBtn"); // logonun yanındaki simge düğme
+const collapseTopBtn = byId("collapseTopBtn"); // logonun yanındaki daraltma düğmesi
 
 // ---------- Menü ----------
 function setDrawerOpen(isOpen) {
@@ -69,11 +68,8 @@ function setDrawerOpen(isOpen) {
 function setCollapsed(isCollapsed) {
   app.classList.toggle("is-collapsed", isCollapsed);
   const label = isCollapsed ? "Menüyü genişlet" : "Menüyü daralt";
-  // İki düğme de aynı durumu göstersin.
-  for (const button of [collapseBtn, collapseTopBtn]) {
-    button.setAttribute("aria-expanded", String(!isCollapsed));
-    button.setAttribute("aria-label", label);
-  }
+  collapseTopBtn.setAttribute("aria-expanded", String(!isCollapsed));
+  collapseTopBtn.setAttribute("aria-label", label);
   collapseTopBtn.title = label;
 }
 
@@ -87,7 +83,6 @@ function toggleCollapsed() {
 function initSidebar() {
   setCollapsed(readPreference("planstrator.sidebarCollapsed", "false") === "true");
 
-  collapseBtn.addEventListener("click", toggleCollapsed);
   collapseTopBtn.addEventListener("click", toggleCollapsed);
 
   menuBtn.addEventListener("click", () => setDrawerOpen(true));

@@ -192,7 +192,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   white-space: nowrap;
 }
 .nav__list { display: grid; gap: 2px; }
-.nav__link, .sidebar__collapse {
+.nav__link {
   display: flex; align-items: center; gap: 12px;
   width: 100%;
   padding: 9px 10px;
@@ -204,19 +204,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
   white-space: nowrap;
   cursor: pointer;
 }
-.nav__link:hover, .sidebar__collapse:hover { background: var(--surface-2); color: var(--text); }
+.nav__link:hover { background: var(--surface-2); color: var(--text); }
 .nav__link.is-active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
-
-.sidebar__collapse .icon { transition: transform 0.2s ease; }
 
 /* Daraltılmış menü: yazıları gizle, ikonları ortala */
 .app.is-collapsed .nav__label,
 .app.is-collapsed .brand__name { display: none; }
 .app.is-collapsed .nav__title { visibility: hidden; height: 14px; padding: 0; }
 .app.is-collapsed .nav__link,
-.app.is-collapsed .sidebar__collapse,
 .app.is-collapsed .brand { justify-content: center; padding-inline: 0; }
-.app.is-collapsed .sidebar__collapse .icon { transform: rotate(180deg); }
 
 /* Logonun yanındaki daraltma düğmesi: sağa yaslanır */
 .brand__collapse { margin-left: auto; }
@@ -333,7 +329,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   .app.is-collapsed .nav__title { visibility: visible; height: auto; padding: 14px 10px 6px; }
   .app.is-collapsed .nav__link,
   .app.is-collapsed .brand { justify-content: flex-start; padding-inline: 10px; }
-  .sidebar__collapse, .brand__collapse { display: none; }
+  .brand__collapse { display: none; }
   .app.is-collapsed .brand { flex-direction: row; }
 
   .topbar { padding: 0 16px; }

@@ -250,3 +250,28 @@ export function writeSyncedData(data, whiteboard) {
     return false;
   }
 }
+
+// ---------- Eşitleme için "başlangıç noktası" ----------
+// Bu cihazın verisinin en son bilinen "hesapla aynı" hali. İki yerde yazılır:
+//   - uygulama ilk kez açılıp örnek verilerle başlarken (henüz kullanıcıya ait hiçbir şey yok)
+//   - hesaptan çıkış yapılırken (o anda veri hesapla eşitti)
+// Hesaba bağlanınca yalnızca bundan SONRA yapılanlar bu cihazın değişikliği sayılır;
+// böylece hoş geldin görevleri ve varsayılan tema, hesaptaki verinin üzerine yazılmaz.
+const START_KEY = "planstrator.sync.start";
+
+export function saveStartingData(data) {
+  try {
+    localStorage.setItem(START_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.warn("Başlangıç verisi kaydedilemedi:", error);
+  }
+}
+
+export function loadStartingData() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(START_KEY));
+    return parsed !== null && typeof parsed === "object" ? parsed : null;
+  } catch (error) {
+    return null;
+  }
+}

@@ -105,7 +105,8 @@
 .stat__note { font-size: 12px; color: var(--muted); }
 
 /* ---------- Görev listesi ---------- */
-.task-list { display: grid; gap: 4px; }
+/* minmax(0, 1fr): tek satırlık (kesilen) açıklamalar sütunu sayfadan taşıracak kadar genişletmesin */
+.task-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
 
 .task {
   display: flex; align-items: flex-start; gap: 12px;
@@ -141,6 +142,40 @@
   color: var(--muted);
 }
 .task__meta-item { display: inline-flex; align-items: center; gap: 5px; }
+
+/* Başlığa tıklanınca görev penceresi açılır (dashboard) */
+.task__open {
+  display: block; width: 100%;
+  padding: 0; border: 0; background: none;
+  color: inherit; font: inherit; font-weight: 550; text-align: left;
+  cursor: pointer;
+}
+.task__open:hover { color: var(--accent); }
+.task.is-done .task__open { color: var(--muted); text-decoration: line-through; }
+
+/* Alt görev sayacı = aç / kapat düğmesi */
+.task__expand {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin: -3px -6px; padding: 3px 6px;
+  border: 0; border-radius: 6px; background: none;
+  color: inherit; font: inherit; cursor: pointer;
+}
+.task__expand:hover { background: var(--surface-2); color: var(--text); }
+.task__expand .icon { width: 15px; height: 15px; }
+.task__chevron { transform: rotate(-90deg); transition: transform 0.15s ease; }
+.task__expand[aria-expanded="true"] .task__chevron { transform: rotate(90deg); }
+
+/* Görevin altında açılan alt görevler */
+.task__subtasks { display: grid; gap: 2px; margin-top: 8px; padding-left: 2px; }
+.task__subtask-label {
+  display: flex; align-items: center; gap: 10px;
+  padding: 5px 6px; border-radius: 6px;
+  font-size: 14px; cursor: pointer; overflow-wrap: anywhere;
+}
+.task__subtask-label:hover { background: var(--surface-2); }
+.task__subtask.is-done .task__subtask-label span { color: var(--muted); text-decoration: line-through; }
+.task__check--sm { width: 17px; height: 17px; margin: 0; border-radius: 5px; }
+.task__check--sm:checked { background-size: 12px; }
 .task__meta-item--danger { color: var(--danger); font-weight: 600; }
 
 /* Kategori noktası: rengi JS'ten --cat değişkeniyle gelir */

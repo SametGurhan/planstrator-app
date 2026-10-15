@@ -19,7 +19,7 @@ test("değişiklik bulma: değişen, eklenen ve silinen kayıtların id'leri not
 
   // Sonraki değişiklik öncekilere eklenir.
   const more = findChanges(after, { ...after, settings: { accentTheme: "green" } }, changes);
-  assert.equal(more.settings, true);
+  assert.deepEqual(more.settings, ["accentTheme"]); // ayarlarda alan alan izlenir
   assert.deepEqual(more.tasks.sort(), ["b", "c", "d"]);
 });
 
@@ -62,4 +62,30 @@ test("çalışan Pomodoro sayacı başka cihazdan gelen veriyle durmaz", () => {
   const remote = { tasks: [task("x", "Telefondan")], timer: null };
   assert.equal(takeRemote(local, remote).timer.status, "running");
   assert.equal(mergeData(local, remote, { tasks: [] }).timer.status, "running");
+});
+
+test("ayarlarda yalnızca bu cihazda değişen alan buradan gelir", () => {
+  const before = { settings: { accentTheme: "blue", background: "waves", displayName: "" } };
+  const after = { settings: { accentTheme: "blue", background: "waves", displayName: "Samet" } };
+  const changes = findChanges(before, after, {});
+  assert.deepEqual(changes.settings, ["displayName"]);
+
+  const remote = { settings: { accentTheme: "green", background: "forest", displayName: "" } };
+  const merged = mergeData(after, remote, changes);
+  assert.deepEqual(merged.settings, { accentTheme: "green", background: "forest", displayName: "Samet" });
+});
+
+test("yeni cihaz hesaba bağlanınca dokunulmamış örnek veriler hesaptakinin yerine geçmez", () => {
+  // Telefon ilk kez açıldı: hoş geldin görevleri ve varsayılan tema. Kullanıcı bir görev ekledi.
+  const start = { tasks: [task("welcome-1", "Hoş geldin"), task("welcome-2", "İlk görevini ekle")], settings: { accentTheme: "blue", background: "waves" } };
+  const phone = { tasks: [...start.tasks, task("tel", "Telefonda eklendi")], settings: { accentTheme: "blue", background: "waves" } };
+  // Hesapta (bilgisayarda) hoş geldin görevleri silinmiş, tema değiştirilmiş.
+  const account = { tasks: [task("pc", "Bilgisayardaki görev")], settings: { accentTheme: "green", background: "river" } };
+
+  const changes = findChanges(start, phone, {});
+  assert.deepEqual(changes, { tasks: ["tel"] });
+
+  const merged = mergeData(phone, account, changes);
+  assert.deepEqual(merged.tasks.map((item) => item.id), ["pc", "tel"]); // hoş geldin görevleri geri gelmedi
+  assert.deepEqual(merged.settings, { accentTheme: "green", background: "river" }); // bilgisayarın teması kaldı
 });

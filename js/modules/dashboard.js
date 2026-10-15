@@ -8,11 +8,12 @@
 // ==========================================================
 
 import { PRIORITY_ORDER } from "../data.js";
-import { getTasks, getCategories, getSessions, getSettings, isWorkSession, addTask, toggleTask } from "../state.js";
+import { getTasks, getCategories, getSessions, getSettings, isWorkSession, addTask, toggleTask, toggleSubtask } from "../state.js";
 import { getTimerText } from "./pomodoro.js";
 import { getHabitSummary } from "./goals.js";
 import { getFirstName } from "./profile.js";
-import { createTaskItem, createEmptyState } from "../components.js";
+import { createTaskItem, createEmptyState, toggleTaskExpanded } from "../components.js";
+import { openTaskForm } from "./tasks.js";
 import { todayKey, addDays, formatMinutes, percent, el, icon, clear, byId, showToast } from "../utils.js";
 
 // Arama kutusuna yazılan metin (app.js bunu setSearchText ile günceller).
@@ -115,7 +116,8 @@ function renderTaskList(listId, list, mode, emptyMessage, today) {
     return;
   }
   for (const task of visible) {
-    container.append(createTaskItem(task, mode, today));
+    // openable: başlığa tıklanınca görev, Görevler sayfasındaki pencerede düzenlenir.
+    container.append(createTaskItem(task, mode, today, { openable: true }));
   }
 }
 
@@ -260,10 +262,24 @@ export function initDashboard() {
   // Olay delegasyonu: her checkbox'a ayrı dinleyici eklemek yerine
   // kapsayıcıya tek dinleyici ekliyoruz. Liste yeniden çizilse bile çalışmaya devam eder.
   view.addEventListener("change", (event) => {
-    if (event.target.matches(".task__check")) {
+    if (event.target.matches(".subtask__check")) {
+      toggleSubtask(event.target.dataset.taskId, event.target.dataset.subtaskId);
+      renderDashboard();
+    } else if (event.target.matches(".task__check")) {
       toggleTask(event.target.dataset.taskId); // state.js değiştirir ve kaydeder
       renderDashboard();
     }
+  });
+
+  // Görev satırlarındaki düğmeler: alt görevleri aç / kapat, görevi pencerede aç.
+  view.addEventListener("click", (event) => {
+    const button = event.target.closest(".task [data-action]");
+    if (!button) return;
+    if (button.dataset.action === "subtasks") {
+      toggleTaskExpanded(button.dataset.taskId);
+      renderDashboard();
+    }
+    if (button.dataset.action === "open") openTaskForm(button.dataset.taskId);
   });
 
   byId("quickAddForm").addEventListener("submit", handleQuickAdd);

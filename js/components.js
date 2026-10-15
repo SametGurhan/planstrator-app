@@ -19,7 +19,7 @@ export function createMetaItem(iconName, text, extraClass) {
 function createActionButton(action, iconName, label, taskId) {
   const button = el("button", "icon-btn icon-btn--sm");
   button.type = "button";
-  button.dataset.action = action; // "edit" veya "delete"
+  button.dataset.action = action; // ör. "delete"
   button.dataset.taskId = taskId;
   button.setAttribute("aria-label", label);
   button.append(icon(iconName));
@@ -37,9 +37,56 @@ function createDateMeta(task, today) {
   return createMetaItem("calendar", text);
 }
 
+// Alt görev listesi açık olan görevlerin id'leri. Liste yeniden çizilince (ör. bir alt görev
+// işaretlenince) açık olan kapanmasın diye burada, çizimden bağımsız tutulur.
+const expandedTasks = new Set();
+
+export function toggleTaskExpanded(taskId) {
+  if (expandedTasks.has(taskId)) {
+    expandedTasks.delete(taskId);
+  } else {
+    expandedTasks.add(taskId);
+  }
+}
+
+// "2/5" sayacı aynı zamanda alt görev listesini açıp kapatan düğmedir.
+function createSubtaskToggle(task, isOpen) {
+  const doneCount = task.subtasks.filter((subtask) => subtask.done).length;
+  const button = el("button", "task__expand");
+  button.type = "button";
+  button.dataset.action = "subtasks";
+  button.dataset.taskId = task.id;
+  button.setAttribute("aria-expanded", String(isOpen));
+  button.setAttribute("aria-label", `Alt görevler (${doneCount}/${task.subtasks.length} tamam): ${isOpen ? "gizle" : "göster"}`);
+  const chevron = icon("chevron");
+  chevron.classList.add("task__chevron");
+  button.append(icon("list"), el("span", "", `${doneCount}/${task.subtasks.length}`), chevron);
+  return button;
+}
+
+// Görevin altında açılan, tek tek işaretlenebilen alt görevler.
+function createSubtaskList(task) {
+  const list = el("ul", "task__subtasks");
+  for (const subtask of task.subtasks) {
+    const row = el("li", "task__subtask");
+    if (subtask.done) row.classList.add("is-done");
+    const label = el("label", "task__subtask-label");
+    const checkbox = el("input", "task__check task__check--sm subtask__check");
+    checkbox.type = "checkbox";
+    checkbox.checked = subtask.done;
+    checkbox.dataset.taskId = task.id;
+    checkbox.dataset.subtaskId = subtask.id;
+    label.append(checkbox, el("span", "", subtask.text)); // kullanıcı metni: textContent
+    row.append(label);
+    list.append(row);
+  }
+  return list;
+}
+
 // Tek bir görev satırı oluşturur.
 // mode: "today" | "upcoming" | "overdue" (dashboard) | "full" (Görevler sayfası)
-export function createTaskItem(task, mode, today) {
+// options.openable: başlığa tıklanınca görev penceresi açılsın mı (dashboard ve Görevler sayfası)
+export function createTaskItem(task, mode, today, options = {}) {
   const item = el("li", "task");
   if (task.completed) item.classList.add("is-done");
   if (mode === "full") item.classList.add("task--full"); // düğmeli satır: dar ekranda iki satıra bölünür (CSS)
@@ -78,9 +125,9 @@ export function createTaskItem(task, mode, today) {
   if (task.estimatedMinutes > 0) {
     meta.append(createMetaItem("timer", formatMinutes(task.estimatedMinutes)));
   }
+  const isOpen = task.subtasks.length > 0 && expandedTasks.has(task.id);
   if (task.subtasks.length > 0) {
-    const doneCount = task.subtasks.filter((subtask) => subtask.done).length;
-    meta.append(createMetaItem("list", `${doneCount}/${task.subtasks.length}`));
+    meta.append(createSubtaskToggle(task, isOpen));
   }
   if (task.recurrence !== "none") {
     meta.append(createMetaItem("reset", RECURRENCE_LABELS[task.recurrence]));
@@ -94,21 +141,29 @@ export function createTaskItem(task, mode, today) {
     }
   }
 
-  body.append(el("p", "task__title", task.title));
+  if (options.openable) {
+    // Başlık bir düğme: fareyle tıklanır, klavyeyle de (Tab + Enter) açılır.
+    const titleButton = el("button", "task__title task__open", task.title);
+    titleButton.type = "button";
+    titleButton.dataset.action = "open";
+    titleButton.dataset.taskId = task.id;
+    body.append(titleButton);
+  } else {
+    body.append(el("p", "task__title", task.title));
+  }
   if (mode === "full" && task.description !== "") {
     body.append(el("p", "task__desc", task.description));
   }
   body.append(meta);
+  if (isOpen) body.append(createSubtaskList(task));
 
   const priority = el("span", `priority priority--${task.priority}`, PRIORITY_LABELS[task.priority]);
   item.append(checkbox, body, priority);
 
   if (mode === "full") {
     const actions = el("div", "task__actions");
-    actions.append(
-      createActionButton("edit", "edit", `Düzenle: ${task.title}`, task.id),
-      createActionButton("delete", "trash", `Sil: ${task.title}`, task.id),
-    );
+    // Düzenlemek için başlığa tıklanır; burada yalnızca silme düğmesi kalır.
+    actions.append(createActionButton("delete", "trash", `Sil: ${task.title}`, task.id));
     item.append(actions);
   }
   return item;

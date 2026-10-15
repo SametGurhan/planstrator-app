@@ -15,7 +15,10 @@
 // ==========================================================
 
 import { api } from "../api.js";
-import { exportAll, onLocalChange, readPreference, savePreference, removePreference, writeSyncedData } from "../storage.js";
+import {
+  exportAll, onLocalChange, readPreference, savePreference, removePreference, writeSyncedData,
+  loadStartingData, saveStartingData,
+} from "../storage.js";
 import { findChanges, hasChanges, mergeData, takeRemote } from "../merge.js";
 import { byId, showToast } from "../utils.js";
 
@@ -230,12 +233,21 @@ export function startSync(id) {
     userId = id;
     const saved = readSyncState(id);
     syncedAt = saved ? saved.syncedAt : null;
-    // Bu cihaz bu hesapla ilk kez eşitleniyorsa neyin değiştiği bilinmiyor (null):
-    // elindeki verinin tamamı hesaptakiyle birleştirilir, hiçbir şey kaybolmaz.
-    changes = saved && saved.changes !== undefined ? saved.changes : null;
+    snapshotLocal();
+    if (saved && saved.changes !== undefined) {
+      changes = saved.changes;
+    } else {
+      // Bu cihaz hesaba ilk kez bağlanıyor. Başlangıç noktası biliniyorsa yalnızca ondan sonra
+      // yapılanlar bu cihazın değişikliğidir: dokunulmamış örnek veriler ve varsayılan ayarlar
+      // hesaptakinin yerine geçmez. Bilinmiyorsa (eski kurulum) hiçbir şey kaybolmasın diye
+      // her şey değişmiş sayılır (null) ve iki taraf birleştirilir.
+      const start = loadStartingData();
+      changes = start === null ? null : findChanges(start, previousLocal, {});
+    }
     saveSyncState();
+  } else {
+    snapshotLocal();
   }
-  snapshotLocal();
   clearInterval(checkTimer);
   checkTimer = setInterval(() => {
     if (!document.hidden) syncNow(false);
@@ -250,6 +262,8 @@ export async function flushSync() {
 
 // Çıkış yapılınca account.js çağırır. Bu cihazdaki veri silinmez.
 export function stopSync() {
+  // Bekleyen değişiklik yoksa veri şu an hesapla aynı: tekrar girişte başlangıç noktası bu olsun.
+  if (userId !== null && !isDirty()) saveStartingData(JSON.parse(JSON.stringify(getLocalData())));
   userId = null;
   syncedAt = null;
   changes = {};

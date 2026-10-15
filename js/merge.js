@@ -8,7 +8,8 @@
 // önceki ve yeni veri karşılaştırılır, değişen kayıtların id'leri not edilir:
 //   { tasks: ["id1", "id2"], settings: true }
 //   liste bölümlerinde: değişen / eklenen / silinen kayıtların id'leri
-//   diğer bölümlerde (ayarlar gibi): true = bu bölüm değişti
+//   nesne bölümlerinde (ayarlar): değişen alanların adları -> { settings: ["accentTheme"] }
+//   diğerlerinde: true = bu bölüm değişti
 // changes === null: neyin değiştiği bilinmiyor (cihaz hesaba ilk kez bağlanıyor) -> hepsi değişmiş say.
 // ==========================================================
 
@@ -22,6 +23,10 @@ const IGNORED_KEYS = ["version"];
 // Liste kimlikli kayıtlardan mı oluşuyor? ({ id: "..." } biçiminde)
 function isIdList(value) {
   return Array.isArray(value) && value.every((item) => item !== null && typeof item === "object" && typeof item.id === "string");
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function same(a, b) {
@@ -60,6 +65,13 @@ export function findChanges(previous, current, changes) {
     if (isIdList(before) && isIdList(after)) {
       const ids = new Set([...(result[key] || []), ...changedIds(before, after)]);
       if (ids.size > 0) result[key] = [...ids];
+    } else if (isPlainObject(before) && isPlainObject(after)) {
+      // Ayarlar gibi nesnelerde hangi alanların değiştiğini not et.
+      const fields = new Set(result[key] || []);
+      for (const field of new Set([...Object.keys(before), ...Object.keys(after)])) {
+        if (!same(before[field], after[field])) fields.add(field);
+      }
+      if (fields.size > 0) result[key] = [...fields];
     } else {
       result[key] = true;
     }
@@ -122,6 +134,12 @@ export function mergeData(local, remote, changes) {
       result[key] = theirs; // bu cihazda dokunulmamış: sunucudaki geçerli
     } else if (isIdList(mine) && isIdList(theirs)) {
       result[key] = Array.isArray(changed) ? mergeList(mine, theirs, new Set(changed)) : unionList(mine, theirs);
+    } else if (isPlainObject(mine) && isPlainObject(theirs) && Array.isArray(changed)) {
+      // Yalnızca bu cihazda değişen alanlar buradan, gerisi sunucudan.
+      result[key] = { ...theirs };
+      for (const field of changed) {
+        if (field in mine) result[key][field] = mine[field];
+      }
     } else {
       result[key] = mine;
     }

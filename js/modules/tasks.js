@@ -5,9 +5,9 @@
 import { PRIORITY_ORDER } from "../data.js";
 import {
   getTasks, getTaskById, getCategories, getAllTags, getTemplates, copyTemplateItems,
-  addTask, updateTask, deleteTask, toggleTask, validateTaskInput, resetToSampleData,
+  addTask, updateTask, deleteTask, toggleTask, toggleSubtask, validateTaskInput, resetToSampleData,
 } from "../state.js";
-import { createTaskItem, createEmptyState, createItemEditor, askConfirm } from "../components.js";
+import { createTaskItem, createEmptyState, createItemEditor, askConfirm, toggleTaskExpanded } from "../components.js";
 import { todayKey, clear, byId, showToast, parseTags, fillSelect } from "../utils.js";
 
 // Sayfanın o anki durumu
@@ -136,7 +136,8 @@ export function renderTasks() {
 
   const today = todayKey();
   for (const task of visible) {
-    list.append(createTaskItem(task, "full", today));
+    // openable: başlığa tıklanınca görev düzenleme penceresinde açılır.
+    list.append(createTaskItem(task, "full", today, { openable: true }));
   }
 }
 
@@ -333,17 +334,24 @@ export function initTasks(options) {
 
   // Onay kutusu
   list.addEventListener("change", (event) => {
-    if (event.target.matches(".task__check")) {
+    if (event.target.matches(".subtask__check")) {
+      toggleSubtask(event.target.dataset.taskId, event.target.dataset.subtaskId);
+      renderTasks();
+    } else if (event.target.matches(".task__check")) {
       toggleTask(event.target.dataset.taskId);
       renderTasks();
     }
   });
 
-  // Düzenle / Sil düğmeleri. closest: tıklanan ikon olsa bile düğmeyi bulur.
+  // Başlık (düzenle), alt görev oku ve Sil düğmesi. closest: tıklanan ikon olsa bile düğmeyi bulur.
   list.addEventListener("click", (event) => {
     const button = event.target.closest("[data-action]");
     if (!button) return;
-    if (button.dataset.action === "edit") openTaskForm(button.dataset.taskId);
+    if (button.dataset.action === "subtasks") {
+      toggleTaskExpanded(button.dataset.taskId); // alt görev listesini aç / kapat
+      renderTasks();
+    }
+    if (button.dataset.action === "open") openTaskForm(button.dataset.taskId);
     if (button.dataset.action === "delete") handleDelete(button.dataset.taskId);
   });
 }

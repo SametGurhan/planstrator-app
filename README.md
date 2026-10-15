@@ -57,7 +57,7 @@ npm test
 
 - **Cihazda:** kişisel verin tarayıcının `localStorage` alanında durur (yaklaşık 5 MB sınır). Kimse başkasının verisini göremez; her kurulum kendi boş kopyasıyla başlar. Tarayıcıya ve adrese özeldir; tarayıcı verisini temizlersen silinir.
 - **Dosya yedeği:** Ayarlar → *Yedeği indir (JSON)* ve *Yedekten geri yükle*.
-- **Otomatik eşitleme:** aynı hesapla giriş yapılan bütün cihazlarda veri kendiliğinden aynı kalır. Bir şey değişince 2 saniye içinde gönderilir; uygulamaya dönünce ve açıkken dakikada bir yeni değişiklik var mı diye bakılır. Üst çubuktaki bulut simgesinin noktası durumu gösterir (yeşil: eşitlendi, sarı: gönderilecek, gri: çevrimdışı, kırmızı: hata). İki cihazda aynı anda değişiklik olursa ikisi kayıt kayıt birleştirilir (`js/merge.js`); aynı kayıt iki yerde birden değiştiyse son gönderen geçerli olur. Pomodoro sayacı her cihazda ayrı çalışır.
+- **Otomatik eşitleme:** aynı hesapla giriş yapılan bütün cihazlarda veri kendiliğinden aynı kalır. Bir şey değişince 2 saniye içinde gönderilir; uygulamaya dönünce ve açıkken dakikada bir yeni değişiklik var mı diye bakılır. Üst çubuktaki bulut simgesinin noktası durumu gösterir (yeşil: eşitlendi, sarı: gönderilecek, gri: çevrimdışı, kırmızı: hata). İki cihazda aynı anda değişiklik olursa ikisi kayıt kayıt birleştirilir (`js/merge.js`); aynı kayıt iki yerde birden değiştiyse son gönderen geçerli olur. Pomodoro sayacı her cihazda ayrı çalışır. Yeni bir cihaz hesaba bağlandığında, o cihazda henüz dokunulmamış örnek veriler (hoş geldin görevleri, varsayılan tema) hesaptakinin yerine geçmez; yalnızca kullanıcının o cihazda kendi yaptıkları hesaba eklenir.
 - **Ortak panolar:** yalnızca sunucuda durur, üyeler arasında 8 saniyede bir tazelenir.
 
 ## Ortak pano nasıl kullanılır?

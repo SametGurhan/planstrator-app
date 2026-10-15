@@ -10,7 +10,7 @@ import {
   initState, getTasks, getTaskById, addTask, updateTask, toggleTask, moveTask, deleteTask,
   validateTaskInput, getCategories, addCategory, deleteCategory, validateCategoryInput,
   getTemplateById, copyTemplateItems, createInstanceFromTemplate, toggleInstanceItem, getInstances,
-  goalStore, habitStore, isHabitDone, toggleHabitEntry, deleteHabit, validateSettingsInput,
+  goalStore, habitStore, isHabitDone, toggleHabitEntry, deleteHabit, validateSettingsInput, toggleSubtask,
 } from "../js/state.js";
 import { todayKey, addDays } from "../js/utils.js";
 
@@ -197,4 +197,26 @@ test("eski sürüm (1) veri kaybolmadan en yeni sürüme taşınır", () => {
 
   updateTask("eski-1", { title: "Güncellendi" }); // bir değişiklik kaydı tetikler
   assert.equal(readSaved().version, 6);
+});
+
+test("ilk açılışta örnek veriler eşitleme için başlangıç noktası olarak saklanır", () => {
+  localStorage.clear();
+  initState();
+  const start = JSON.parse(localStorage.getItem("planstrator.sync.start"));
+  assert.deepEqual(start.tasks.map((item) => item.id), getTasks().map((item) => item.id));
+
+  // Kullanıcının verisi varken başlangıç noktası değişmez.
+  addTask({ title: "Kullanıcının görevi" });
+  initState();
+  assert.equal(JSON.parse(localStorage.getItem("planstrator.sync.start")).tasks.length, start.tasks.length);
+});
+
+test("alt görev tek başına işaretlenir; görevin kendisi değişmez", () => {
+  const task = addTask({ title: "Alt görevli", subtasks: [{ text: "Bir" }, { text: "İki" }] });
+  const firstId = getTaskById(task.id).subtasks[0].id;
+  toggleSubtask(task.id, firstId);
+  const updated = getTaskById(task.id);
+  assert.deepEqual(updated.subtasks.map((subtask) => subtask.done), [true, false]);
+  assert.equal(updated.completed, false);
+  assert.equal(readSaved().tasks.find((item) => item.id === task.id).subtasks[0].done, true);
 });
